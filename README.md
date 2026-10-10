@@ -14,7 +14,7 @@ Archived release DOI: https://doi.org/10.5281/zenodo.23287972
 
 **Corresponding author:** Zaher Fadhil Raham, pt21162@uniten.edu.my (alternative: zahir.raham@gmail.com).
 
-The DOI identifies the previously archived 0.1.1 research package. This repository distributes data and analysis code only. The unpublished manuscript is not included. Previously archived releases contained a manuscript in error; its removal from those archives is being pursued.
+The DOI identifies the previously archived 0.1.1 research package. This repository distributes data and analysis code only. The unpublished manuscript is not included. The manuscript was removed from both Zenodo archives as a correction to unintended inclusion. GitHub releases and tags 0.1.0, 0.1.1 and 0.1.2 were deleted. The main branch history excludes the manuscript; old unreferenced Git objects may require removal by GitHub Support.
 
 ## Recorded experiment
 
@@ -58,7 +58,7 @@ Earlier files bearing 823 or 892 in their names, `verified_paired_metrics.csv`, 
 
 The Zenodo record lists CC BY 4.0. Source snippets retain their upstream ownership and licence terms. Current upstream licence notices are supplied as reference notices; they do not recover the licence headers and source commits omitted during extraction. The deposit licence does not replace applicable third-party licence terms. The omitted original source paths and commit identifiers remain a provenance limitation.
 
-Keep the paper labelled as a manuscript/preprint rather than a peer-reviewed publication until accepted.
+The associated paper is an unpublished manuscript and is not distributed in the current repository or the corrected Zenodo archives.
 
 ## Citation
 
