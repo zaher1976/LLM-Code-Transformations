@@ -1,0 +1,26 @@
+[
+  {
+    "project": "pytorch_geometric",
+    "url": "https://raw.githubusercontent.com/pyg-team/pytorch_geometric/master/LICENSE",
+    "retrieved": "2026-10-10",
+    "status": "retrieved_current_notice"
+  },
+  {
+    "project": "pycryptodome",
+    "url": "https://raw.githubusercontent.com/Legrandin/pycryptodome/master/LICENSE.rst",
+    "retrieved": "2026-10-10",
+    "status": "retrieved_current_notice"
+  },
+  {
+    "project": "pandas",
+    "url": "https://raw.githubusercontent.com/pandas-dev/pandas/main/LICENSE",
+    "retrieved": "2026-10-10",
+    "status": "retrieved_current_notice"
+  },
+  {
+    "project": "scrapy",
+    "url": "https://raw.githubusercontent.com/scrapy/scrapy/master/LICENSE",
+    "retrieved": "2026-10-10",
+    "status": "retrieved_current_notice"
+  }
+]

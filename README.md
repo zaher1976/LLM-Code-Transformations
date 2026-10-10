@@ -1,8 +1,20 @@
 # Structural Complexity and Documentation Loss in Code Transformations by a Large Language Model
 
-Research archive candidate, version 0.1.0. Prepared 10 October 2026. GitHub repository: https://github.com/zaher1976/LLM-Code-Transformations . No Zenodo DOI has been assigned.
+Research package archived on Zenodo, version 0.1.1, published 10 October 2026.
 
-Authors: Sura Salah, Sama Hayder, Zaher Fadhil Raham. Corresponding author: pt21162@uniten.edu.my. ORCID for Zaher: https://orcid.org/0009-0001-4728-806X.
+GitHub: https://github.com/zaher1976/LLM-Code-Transformations
+
+Archived release DOI: https://doi.org/10.5281/zenodo.23287972
+
+## Authors and affiliations
+
+1. **Sura Salah** — Presidency of Al-Nahrain University, Baghdad, Iraq. Email: sura.salah89@nahrainuniv.edu.iq.
+2. **Sama Hayder** — Administrative Technical College, Middle Technical University, Baghdad, Iraq. Email: sama.yaser91@gmail.com.
+3. **Zaher Fadhil Raham** — College of Computing and Informatics, Universiti Tenaga Nasional (UNITEN), Selangor 43000, Malaysia; Al-Nahrain University, Baghdad, Iraq. ORCID: https://orcid.org/0009-0001-4728-806X.
+
+**Corresponding author:** Zaher Fadhil Raham, pt21162@uniten.edu.my (alternative: zahir.raham@gmail.com).
+
+The DOI identifies the previously archived 0.1.1 research package. This repository distributes data and analysis code only. The unpublished manuscript is not included. Previously archived releases contained a manuscript in error; its removal from those archives is being pursued.
 
 ## Recorded experiment
 
@@ -16,7 +28,6 @@ Independent remeasurement reproduced the 910 function identifiers, 74 exclusions
 - `scripts/`: portable remeasurement and verification scripts. They do not call an LLM, clone repositories or execute function bodies from the CSVs.
 - `notebooks/`: clean Colab entry point for remeasurement from this package.
 - `figures/`: figures supplied with the original final pipeline; their bytes are unchanged.
-- `manuscript/`: corrected manuscript with unresolved author declarations retained.
 - `reports/`: verification results, environment and scope notes.
 - `LICENSES/`: current upstream project notices and provenance notes.
 
@@ -37,7 +48,7 @@ Generated files go to `outputs/`, leaving `data/` unchanged. To use another loca
 
 CC uses Radon's total complexity; NLOC uses `raw.analyze().sloc`. Comment percentage includes multiline strings and may exceed 100 because its denominator is source lines. MI0 sets the MI comment input to zero on the same code; documentation can still affect logical-line counts. The cognitive metric is a custom AST score adapted from Campbell and has not been validated as equivalent to SonarSource. Its code is preserved for reproducibility; it is not silently corrected to a different metric.
 
-Exactly two final functions have identical source text in different files. Sampling reproduces the full source-row multiset; it does not reconstruct full repository paths or commit identities, which were not recorded. The 119 zero-volume pairs require special care in MI term diagnostics; the sum of the formal terms is not an exact decomposition of reported MI. See the corrected manuscript and verification report.
+Exactly two final functions have identical source text in different files. Sampling reproduces the full source-row multiset; it does not reconstruct full repository paths or commit identities, which were not recorded. The 119 zero-volume pairs require special care in MI term diagnostics; the sum of the formal terms is not an exact decomposition of reported MI. See the verification report.
 
 ## Historical files
 
@@ -45,15 +56,12 @@ Earlier files bearing 823 or 892 in their names, `verified_paired_metrics.csv`, 
 
 ## Publication and permissions
 
-No blanket licence is assigned by this preparation. Source snippets retain their upstream ownership and licence terms. Current upstream licence notices are supplied as reference notices; they do not recover the licence headers and source commits omitted during extraction. Authors should complete source attribution and choose licences for their original scripts, metrics and manuscript before a public release. This candidate does not assert that all third-party attribution requirements have been resolved.
+The Zenodo record lists CC BY 4.0. Source snippets retain their upstream ownership and licence terms. Current upstream licence notices are supplied as reference notices; they do not recover the licence headers and source commits omitted during extraction. The deposit licence does not replace applicable third-party licence terms. The omitted original source paths and commit identifiers remain a provenance limitation.
 
-The author-contribution, funding and competing-interest fields in the manuscript still require author confirmation. Keep the paper labelled as a manuscript/preprint rather than a peer-reviewed publication until accepted.
+Keep the paper labelled as a manuscript/preprint rather than a peer-reviewed publication until accepted.
 
-## GitHub and Zenodo
+## Citation
 
-1. This package is deposited in the GitHub repository linked above, with the folder structure preserved.
-2. Confirm authorship, upstream attribution, public visibility and licences; update the release metadata with the repository URL.
-3. Link GitHub to Zenodo and enable this repository **before** creating the release.
-4. Publish a tagged GitHub release. Zenodo can archive it and assign a DOI; replace the candidate citation metadata with the actual DOI afterwards.
+Salah, S., Hayder, S., & Raham, Z. F. (2026). *Structural Complexity and Documentation Loss in Code Transformations by a Large Language Model* (Version 0.1.1) [Research package]. Zenodo. https://doi.org/10.5281/zenodo.23287972
 
-Official instructions: https://help.zenodo.org/docs/github/enable-repository/ and https://help.zenodo.org/docs/github/archive-software/github-upload/ . A separate Zenodo preprint record can describe the manuscript, with a related identifier pointing to the data/software record.
+See `CITATION.cff` for machine-readable author and citation metadata.

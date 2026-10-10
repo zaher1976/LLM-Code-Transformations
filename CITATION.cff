@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "Please cite this research package; Zenodo assigns a DOI to each published release."
+url: "https://github.com/zaher1976/LLM-Code-Transformations"
+repository-code: "https://github.com/zaher1976/LLM-Code-Transformations"
+title: "Structural Complexity and Documentation Loss in Code Transformations by a Large Language Model"
+type: dataset
+version: 0.1.2
+date-released: 2026-10-10
+abstract: "Archived source functions, recorded GPT-4o transformations, paired static metrics and scripts for remeasurement of 910 analysed pairs and a 100-function prompt ablation. Behavioural equivalence was not tested."
+authors:
+  - family-names: "Salah"
+    given-names: "Sura"
+    email: "sura.salah89@nahrainuniv.edu.iq"
+    affiliation: "Presidency of Al-Nahrain University, Baghdad, Iraq"
+  - family-names: "Hayder"
+    given-names: "Sama"
+    email: "sama.yaser91@gmail.com"
+    affiliation: "Administrative Technical College, Middle Technical University, Baghdad, Iraq"
+  - family-names: "Raham"
+    given-names: "Zaher Fadhil"
+    email: "pt21162@uniten.edu.my"
+    affiliation: "College of Computing and Informatics, Universiti Tenaga Nasional (UNITEN), Selangor 43000, Malaysia; Al-Nahrain University, Baghdad, Iraq"
+    orcid: "https://orcid.org/0009-0001-4728-806X"
+keywords:
+  - "large language models"
+  - "code transformations"
+  - "documentation loss"
+  - "maintainability index"

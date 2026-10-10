@@ -1,0 +1,2941 @@
+func_id,domain,transformed_code,model_version,timestamp,finish_reason,prompt_tokens,completion_tokens
+FUNC_0761,WebScraping,"def check_stop_download(
+    signal: object, crawler: Crawler, request: Request, **kwargs: Any
+) -> StopDownload | None:
+    """"""Send the given signal and check if any of its handlers raised
+    :exc:`~scrapy.exceptions.StopDownload`.
+
+    Return the raised exception or ``None``.
+    """"""
+    signal_result = crawler.signals.send_catch_log(
+        signal=signal,
+        request=request,
+        spider=crawler.spider,
+        **kwargs,
+    )
+    
+    def is_stop_download(result):
+        return isinstance(result, Failure) and isinstance(result.value, StopDownload)
+
+    for handler, result in signal_result:
+        if is_stop_download(result):
+            logger.debug(
+                f""Download stopped for {request} from signal handler {handler.__qualname__}""
+            )
+            return result.value
+
+    return None",gpt-4o-2024-08-06,2026-10-01T06:15:18.541388+00:00,stop,279,180
+FUNC_0701,DataPipelines,"def _wrap_join_result(
+    self,
+    joined: ArrayLike,
+    other: Self,
+    lidx: npt.NDArray[np.intp] | None,
+    ridx: npt.NDArray[np.intp] | None,
+    how: JoinHow,
+) -> tuple[Self, npt.NDArray[np.intp] | None, npt.NDArray[np.intp] | None]:
+    """"""Wrap the result of a join operation, maintaining cached attributes if possible.""""""
+    assert other.dtype == self.dtype
+
+    # Simplify index handling by setting to None if it's a range indexer
+    lidx = None if lidx is not None and lib.is_range_indexer(lidx, len(self)) else lidx
+    ridx = None if ridx is not None and lib.is_range_indexer(ridx, len(other)) else ridx
+
+    # Determine the join index based on the presence of lidx and ridx
+    if lidx is None:
+        join_index = self
+    elif ridx is None:
+        join_index = other
+    else:
+        join_index = self._constructor._with_infer(joined, dtype=self.dtype, copy=False)
+
+    # Set the correct names for the join index
+    target_names = other.names if how == ""right"" else self.names
+    if join_index.names != target_names:
+        join_index = join_index.set_names(target_names)
+
+    return join_index, lidx, ridx",gpt-4o-2024-08-06,2026-10-01T06:15:26.246045+00:00,stop,376,312
+FUNC_0609,DataPipelines,"def astype_array(values: ArrayLike, dtype: DtypeObj, copy: bool = False) -> ArrayLike:
+    """"""
+    Cast array (ndarray or ExtensionArray) to the new dtype.
+
+    Parameters
+    ----------
+    values : ndarray or ExtensionArray
+    dtype : dtype object
+    copy : bool, default False
+        copy if indicated
+
+    Returns
+    -------
+    ndarray or ExtensionArray
+    """"""
+    if values.dtype == dtype:
+        return values.copy() if copy else values
+
+    if isinstance(values, np.ndarray):
+        values = _astype_nansafe(values, dtype, copy=copy)
+    else:
+        values = values.astype(dtype, copy=copy)
+
+    # in pandas we don't store numpy str dtypes, so convert to object
+    if isinstance(dtype, np.dtype) and issubclass(values.dtype.type, str):
+        values = np.array(values, dtype=object)
+
+    return values",gpt-4o-2024-08-06,2026-10-01T06:15:31.655021+00:00,stop,322,196
+FUNC_0040,Matrix,"def _update(self, step_size: int, gradient: Tensor, *args, **kwargs) -> Dict[str, Any]:
+    """"""Update edge weights given gradient.""""""
+    _, topk_edge_index = torch.topk(gradient, step_size)
+    flip_edge_index = self.block_edge_index[:, topk_edge_index]
+    flip_edge_weight = torch.ones_like(flip_edge_index[0], dtype=torch.float32)
+
+    self.flipped_edges = torch.cat((self.flipped_edges, flip_edge_index), axis=-1)
+
+    if self.is_undirected:
+        flip_edge_index, flip_edge_weight = to_undirected(
+            flip_edge_index, flip_edge_weight, num_nodes=self.num_nodes, reduce='mean'
+        )
+
+    edge_index, edge_weight = self._combine_edges(flip_edge_index, flip_edge_weight)
+    self._filter_edges(edge_index, edge_weight)
+
+    # Sample initial search space (Algorithm 2, line 3-4)
+    self._sample_random_block(step_size)
+
+    # Return debug information
+    return {'number_positive_entries_in_gradient': (gradient > 0).sum().item()}
+
+def _combine_edges(self, flip_edge_index, flip_edge_weight):
+    edge_index = torch.cat(
+        (self.edge_index.to(self.device), flip_edge_index.to(self.device)), dim=-1
+    )
+    edge_weight = torch.cat(
+        (self.edge_weight.to(self.device), flip_edge_weight.to(self.device))
+    )
+    return coalesce(edge_index, edge_weight, num_nodes=self.num_nodes, reduce='sum')
+
+def _filter_edges(self, edge_index, edge_weight):
+    is_one_mask = torch.isclose(edge_weight, torch.tensor(1.))
+    self.edge_index = edge_index[:, is_one_mask]
+    self.edge_weight = edge_weight[is_one_mask]
+    assert self.edge_index.size(1) == self.edge_weight.size(0)",gpt-4o-2024-08-06,2026-10-01T06:15:34.162130+00:00,stop,481,395
+FUNC_0689,DataPipelines,"def range_to_ndarray(rng: range) -> np.ndarray:
+    """"""
+    Cast a range object to ndarray.
+    """"""
+    # GH#30171 perf avoid realizing range as a list in np.array
+    def try_arange(dtype):
+        try:
+            return np.arange(rng.start, rng.stop, rng.step, dtype=dtype)
+        except OverflowError:
+            return None
+
+    arr = try_arange(""int64"")
+    if arr is None:
+        # GH#30173 handling for ranges that overflow int64
+        if (rng.start >= 0 and rng.step > 0) or (rng.step < 0 <= rng.stop):
+            arr = try_arange(""uint64"")
+        if arr is None:
+            arr = construct_1d_object_array_from_listlike(list(rng))
+    
+    return arr",gpt-4o-2024-08-06,2026-10-01T06:15:39.066201+00:00,stop,296,177
+FUNC_0911,WebScraping,"def peek(self) -> Request | None:
+    """"""Returns the next object to be returned by :meth:`pop`,
+    but without removing it from the queue.
+
+    Raises :exc:`NotImplementedError` if the underlying queue class does
+    not implement a ``peek`` method, which is optional for queues.
+    """"""
+    if self.curprio is None:
+        return None
+
+    queue = self._start_queues.get(self.curprio, self.queues.get(self.curprio))
+    if queue is None:
+        return None
+
+    # Protocols can't declare optional members
+    return cast(""Request"", queue.peek())  # type: ignore[attr-defined]",gpt-4o-2024-08-06,2026-10-01T06:15:41.332768+00:00,stop,253,139
+FUNC_0573,DataPipelines,"def _groupby_quantile(
+    self,
+    *,
+    qs: npt.NDArray[np.float64],
+    interpolation: Literal[""linear"", ""lower"", ""higher"", ""nearest"", ""midpoint""],
+    ids: npt.NDArray[np.intp],
+    ngroups: int,
+    starts: npt.NDArray[np.int64],
+    ends: npt.NDArray[np.int64],
+) -> ArrayLike:
+    """"""Compute quantiles for each group.""""""
+    mask = self._mask
+    nqs = len(qs)
+    result_mask = np.zeros((ngroups, nqs), dtype=np.bool_)
+    vals = self.to_numpy(dtype=float, na_value=np.nan)
+    out = np.empty((ngroups, nqs), dtype=np.float64)
+
+    libgroupby.group_quantile(
+        out,
+        values=vals,
+        mask=mask,  # type: ignore[arg-type]
+        labels=ids,
+        qs=qs,
+        interpolation=interpolation,
+        starts=starts,
+        ends=ends,
+        result_mask=result_mask,
+        is_datetimelike=False,
+    )
+
+    out = out.ravel(""K"")  # type: ignore[assignment]
+    result_mask = result_mask.ravel(""K"")  # type: ignore[assignment]
+
+    if interpolation not in {""linear"", ""midpoint""} or is_float_dtype(self):
+        return self._maybe_mask_result(out, result_mask)
+
+    # For non-interpolating methods on non-float dtypes, cast back
+    # to the original numpy dtype (e.g. float64 -> int64).
+    with warnings.catch_warnings():
+        warnings.filterwarnings(""ignore"", category=RuntimeWarning)
+        out = out.astype(self.dtype.numpy_dtype)
+
+    return self._maybe_mask_result(out, result_mask)",gpt-4o-2024-08-06,2026-10-01T06:15:43.857614+00:00,stop,479,380
+FUNC_0171,Matrix,"def _is_retryable_exception(exc: Exception, status_code) -> bool:
+    """"""Return True if an exception is likely to succeed when retried.""""""
+    if status_code is not None:
+        return status_code == 429 or status_code >= 500
+
+    # Network/transport exceptions.
+    return _is_network_exception(exc)
+
+def _is_network_exception(exc: Exception) -> bool:
+    """"""Check if the exception is a network-related exception.""""""
+    try:
+        from openai import APIConnectionError, APITimeoutError
+        return isinstance(exc, (APIConnectionError, APITimeoutError))
+    except ImportError:
+        return False",gpt-4o-2024-08-06,2026-10-01T06:15:47.676947+00:00,stop,221,139
+FUNC_0156,Matrix,"def lexsort(
+    keys: List[Tensor],
+    dim: int = -1,
+    descending: bool = False,
+) -> Tensor:
+    r""""""Performs an indirect stable sort using a sequence of keys.
+
+    Given multiple sorting keys, returns an array of integer indices that
+    describe their sort order.
+    The last key in the sequence is used for the primary sort order, the
+    second-to-last key for the secondary sort order, and so on.
+
+    Args:
+        keys ([torch.Tensor]): The :math:`k` different columns to be sorted.
+            The last key is the primary sort key.
+        dim (int, optional): The dimension to sort along. (default: :obj:`-1`)
+        descending (bool, optional): Controls the sorting order (ascending or
+            descending). (default: :obj:`False`)
+    """"""
+    assert len(keys) >= 1
+
+    out = keys[0].argsort(dim=dim, descending=descending, stable=True)
+    for k in keys[1:]:
+        out = out.gather(dim, k.gather(dim, out).argsort(dim=dim, descending=descending, stable=True))
+
+    return out",gpt-4o-2024-08-06,2026-10-01T06:15:50.228013+00:00,stop,375,252
+FUNC_0436,Crypto,"def _decodeFromStream(self, s, strict):
+    """"""Decode a complete DER SEQUENCE from a file.""""""
+
+    self._seq = []
+
+    # Fill up self.payload
+    DerObject._decodeFromStream(self, s, strict)
+
+    # Add one item at a time to self.seq, by scanning self.payload
+    p = BytesIO_EOF(self.payload)
+    while p.remaining_data() > 0:
+        self._processPayloadItem(p, strict)
+
+    self._validateSequenceLength()
+
+def _processPayloadItem(self, p, strict):
+    """"""Process a single item from the payload.""""""
+    p.set_bookmark()
+    der = DerObject()
+    der._decodeFromStream(p, strict)
+
+    # Parse INTEGERs differently
+    if der._tag_octet != 0x02:
+        self._seq.append(p.data_since_bookmark())
+    else:
+        derInt = DerInteger()
+        data = p.data_since_bookmark()
+        derInt.decode(data, strict=strict)
+        self._seq.append(derInt.value)
+
+def _validateSequenceLength(self):
+    """"""Validate the length of the decoded sequence.""""""
+    if self._nr_elements is not None:
+        try:
+            ok = len(self._seq) in self._nr_elements
+        except TypeError:
+            ok = len(self._seq) == self._nr_elements
+
+        if not ok:
+            raise ValueError(""Unexpected number of members (%d)""
+                             "" in the sequence"" % len(self._seq))",gpt-4o-2024-08-06,2026-10-01T06:15:52.895193+00:00,stop,377,312
+FUNC_0346,Crypto,"def extend_html_context(app, pagename, templatename, context, doctree):
+    """"""Extend the HTML context with Sphinx version info and Read the Docs environment variables.""""""
+    
+    # Add ``sphinx_version_info`` tuple for use in Jinja templates
+    context['sphinx_version_info'] = sphinx_version
+
+    # Inject all the Read the Docs environment variables in the context:
+    # https://docs.readthedocs.io/en/stable/reference/environment-variables.html
+    if os.environ.get(""READTHEDOCS"", False) == ""True"":
+        context['READTHEDOCS'] = True
+        context.update({key: value for key, value in os.environ.items() if key.startswith(""READTHEDOCS_"")})
+    else:
+        context['READTHEDOCS'] = False",gpt-4o-2024-08-06,2026-10-01T06:15:56.157027+00:00,stop,265,178
+FUNC_0967,WebScraping,"def request_from_dict(d: dict[str, Any], *, spider: Spider | None = None) -> Request:
+    """"""Create a :class:`~scrapy.Request` object from a dict.
+
+    If a spider is given, it will try to resolve the callbacks looking at the
+    spider for methods with the same name.
+    """"""
+    request_cls: type[Request] = load_object(d[""_class""]) if ""_class"" in d else Request
+    kwargs = {key: value for key, value in d.items() if key in request_cls.attributes}
+    
+    def resolve_callback(callback_name: str):
+        if d.get(callback_name) and spider:
+            kwargs[callback_name] = _get_method(spider, d[callback_name])
+    
+    resolve_callback(""callback"")
+    resolve_callback(""errback"")
+    
+    return request_cls(**kwargs)",gpt-4o-2024-08-06,2026-10-01T06:15:58.774131+00:00,stop,295,179
+FUNC_0630,DataPipelines,"def agg_or_apply_dict_like(
+    self, op_name: Literal[""agg"", ""apply""]
+) -> DataFrame | Series:
+    from pandas.core.groupby.generic import (
+        DataFrameGroupBy,
+        SeriesGroupBy,
+    )
+
+    assert op_name in [""agg"", ""apply""]
+
+    obj = self.obj
+    kwargs: dict[str, Any] = {}
+
+    if op_name == ""apply"":
+        kwargs[""by_row""] = ""_compat"" if self.by_row else False
+
+    if getattr(obj, ""axis"", 0) == 1:
+        raise NotImplementedError(""axis other than 0 is not supported"")
+
+    selected_obj = obj._selected_obj
+    selection = obj._selection
+
+    if isinstance(obj, (DataFrameGroupBy, SeriesGroupBy)):
+        kwargs[""engine""] = self.kwargs.get(""engine"", None)
+        kwargs[""engine_kwargs""] = self.kwargs.get(""engine_kwargs"", None)
+
+    with com.temp_setattr(
+        obj, ""as_index"", True, condition=hasattr(obj, ""as_index"")
+    ):
+        result_index, result_data = self.compute_dict_like(
+            op_name, selected_obj, selection, kwargs
+        )
+
+    return self.wrap_results_dict_like(selected_obj, result_index, result_data)",gpt-4o-2024-08-06,2026-10-01T06:16:01.187236+00:00,stop,427,266
+FUNC_0800,WebScraping,"def from_body(self, body: bytes) -> type[Response]:
+    """"""Try to guess the appropriate response based on the body content.
+    This method is a bit magic and could be improved in the future, but
+    it's not meant to be used except for special cases where response types
+    cannot be guess using more straightforward methods.""""""
+    chunk = to_bytes(body[:5000])
+    if not binary_is_text(chunk):
+        return self.from_mimetype(""application/octet-stream"")
+    
+    lowercase_chunk = chunk.lower()
+    if any(tag in lowercase_chunk for tag in [b""<html>"", b""<!doctype html>""]):
+        return self.from_mimetype(""text/html"")
+    if b""<?xml"" in lowercase_chunk:
+        return self.from_mimetype(""text/xml"")
+    
+    return self.from_mimetype(""text"")",gpt-4o-2024-08-06,2026-10-01T06:16:05.231066+00:00,stop,300,173
+FUNC_0765,WebScraping,"def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
+    super().process_options(args, opts)
+    self._convert_spargs_to_dict(opts)
+    self._set_empty_pipelines_and_feeds()
+
+def _convert_spargs_to_dict(self, opts: argparse.Namespace) -> None:
+    try:
+        opts.spargs = arglist_to_dict(opts.spargs)
+    except ValueError:
+        raise UsageError(
+            ""Invalid -a value, use -a NAME=VALUE"", print_help=False
+        ) from None
+
+def _set_empty_pipelines_and_feeds(self) -> None:
+    assert self.settings is not None
+    # Contracts discard the output of callbacks, so item pipelines and
+    # feed exports get no items, and opening them only causes side
+    # effects, such as an empty output file. The priority is above spider
+    # custom settings, which also define them, and below the command line,
+    # which can hence set them back.
+    priority = (SETTINGS_PRIORITIES[""spider""] + SETTINGS_PRIORITIES[""cmdline""]) // 2
+    self.settings.set(""ITEM_PIPELINES"", {}, priority=priority)
+    self.settings.set(""FEEDS"", {}, priority=priority)",gpt-4o-2024-08-06,2026-10-01T06:16:08.022180+00:00,stop,329,268
+FUNC_0117,Matrix,"def forward(
+    self,
+    x: Union[Tensor, OptPairTensor],
+    edge_index: Adj,
+    edge_attr: OptTensor = None,
+    size: Size = None,
+) -> Tensor:
+    x = (x, x) if isinstance(x, Tensor) else x
+
+    # propagate_type: (x: OptPairTensor, edge_attr: OptTensor)
+    out = self.propagate(edge_index, x=x, edge_attr=edge_attr, size=size)
+
+    if x[1] is not None:
+        out += (1 + self.eps) * x[1]
+
+    return self.nn(out)",gpt-4o-2024-08-06,2026-10-01T06:16:10.167159+00:00,stop,255,134
+FUNC_0957,WebScraping,"def execute(argv: list[str] | None = None, settings: Settings | None = None) -> None:
+    argv = argv or sys.argv
+    settings = settings or _initialize_settings()
+
+    inproject = inside_project()
+    cmds = _get_commands_dict(settings, inproject)
+    cmdname = _pop_command_name(argv)
+
+    if not cmdname:
+        _print_commands(settings, inproject)
+        sys.exit(0)
+
+    if cmdname not in cmds:
+        _print_unknown_command(settings, cmdname, inproject)
+        sys.exit(2)
+
+    cmd = cmds[cmdname]
+    parser = _create_parser(cmdname, cmd)
+    settings.setdict(cmd.default_settings, priority=""command"")
+    cmd.settings = settings
+    cmd.add_options(parser)
+    opts, args = parser.parse_known_args(args=argv[1:])
+    _run_print_help(parser, cmd.process_options, args, opts)
+
+    cmd.crawler_process = _select_crawler_process(settings, cmd)
+    _run_print_help(parser, _run_command, cmd, args, opts)
+    sys.exit(cmd.exitcode)
+
+def _initialize_settings() -> Settings:
+    settings = get_project_settings()
+    editor = os.environ.get(""EDITOR"")
+    if editor:
+        settings[""EDITOR""] = editor
+    return settings
+
+def _create_parser(cmdname: str, cmd) -> ScrapyArgumentParser:
+    return ScrapyArgumentParser(
+        formatter_class=ScrapyHelpFormatter,
+        usage=f""scrapy {cmdname} {cmd.syntax()}"",
+        conflict_handler=""resolve"",
+        description=cmd.long_desc(),
+    )
+
+def _select_crawler_process(settings: Settings, cmd) -> CrawlerProcess:
+    if (
+        settings[""TWISTED_REACTOR""] == _asyncio_reactor_path
+        and not settings.getbool(""FORCE_CRAWLER_PROCESS"")
+    ) or not settings.getbool(""TWISTED_REACTOR_ENABLED""):
+        return AsyncCrawlerProcess(settings)
+    return CrawlerProcess(settings)",gpt-4o-2024-08-06,2026-10-01T06:16:11.749139+00:00,stop,500,418
+FUNC_0194,Matrix,"def _extract_relevant_triples(
+    self,
+    txt: str,
+    max_retries: int = MAX_OUTER_RETRIES,
+    retry_delay: float = RETRY_DELAY,
+) -> List[Tuple[str, str, str]]:
+    # Handle empty text (context-less QA pairs)
+    if not txt:
+        return []
+
+    # Chunk the text into smaller pieces for processing
+    chunks = _chunk_text(txt, chunk_size=self.chunk_size)
+
+    if self.local_LM:
+        # For debugging purposes...
+        # process chunks sequentially on the local LM
+        return _llm_then_python_parse(chunks, _parse_n_check_triples,
+                                      self._chunk_to_triples_str_local)
+
+    # Create deterministic chunk assignment
+    num_procs = min(len(chunks), _get_num_procs())
+    chunk_size = math.ceil(len(chunks) / num_procs)
+    in_chunks_per_proc = [
+        chunks[j * chunk_size:min((j + 1) * chunk_size, len(chunks))]
+        for j in range(num_procs)
+    ]
+
+    # Run workers via starmap for deterministic ordering
+    worker_args = [
+        (
+            rank,
+            in_chunks_per_proc[rank],
+            _parse_n_check_triples,
+            _chunk_to_triples_str_cloud,
+            self.NVIDIA_API_KEY,
+            self.NIM_MODEL,
+            self.ENDPOINT_URL,
+        )
+        for rank in range(num_procs)
+    ]
+
+    for attempt in range(max_retries):
+        with mp.get_context(""spawn"").Pool(num_procs) as pool:
+            worker_results = pool.starmap(_multiproc_helper, worker_args)
+
+        # Check whether any worker failed.
+        failed_result = next(
+            (result for result in worker_results if not result[""success""]),
+            None,
+        )
+
+        if failed_result is None:
+            # All workers succeeded.
+            results = [result[""result""] for result in worker_results]
+            return _merge_triples_deterministically(results)
+
+        # A worker failed with a non-retryable error.
+        if not failed_result[""retryable""] or attempt == max_retries - 1:
+            raise RuntimeError(failed_result[""error""])
+
+        print(f""[Retry {attempt + 1}/{max_retries}] ""
+              f""Multiprocessing failed: {failed_result['error']}"")
+        time.sleep(retry_delay)",gpt-4o-2024-08-06,2026-10-01T06:16:14.849332+00:00,stop,627,497
+FUNC_0549,DataPipelines,"def _get_indexer_strict(self, key: Axes, axis_name: str_t) -> tuple[Index, np.ndarray]:
+    """"""
+    Analogue to get_indexer that raises if any elements are missing.
+    """"""
+    keyarr = self._prepare_keyarr(key)
+    indexer = self._get_indexer(keyarr)
+    self._raise_if_missing(keyarr, indexer, axis_name)
+    keyarr = self._adjust_keyarr_for_freq(keyarr, key)
+    return keyarr, indexer
+
+def _prepare_keyarr(self, key: Axes) -> Index:
+    if not isinstance(key, Index):
+        key = com.asarray_tuplesafe(key)
+    return key
+
+def _get_indexer(self, keyarr: Index) -> np.ndarray:
+    if self._index_as_unique:
+        indexer = self.get_indexer_for(keyarr)  # pyright: ignore[reportArgumentType]
+        if not isinstance(keyarr, Index):
+            keyarr = ensure_index(keyarr)
+            keyarr.name = self.name
+    else:
+        keyarr, indexer, _ = self._reindex_non_unique(keyarr)  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
+    return indexer
+
+def _adjust_keyarr_for_freq(self, keyarr: Index, key: Axes) -> Index:
+    keyarr = self.take(keyarr)
+    if lib.is_np_dtype(keyarr.dtype, ""mM"") or isinstance(keyarr.dtype, DatetimeTZDtype):
+        if isinstance(key, list) or (
+            isinstance(key, type(self)) and key.freq is None  # type: ignore[attr-defined]
+        ):
+            keyarr = keyarr._with_freq(None)  # type: ignore[attr-defined]
+    return keyarr",gpt-4o-2024-08-06,2026-10-01T06:16:19.907320+00:00,stop,460,379
+FUNC_0977,WebScraping,"async def close_spider(self, spider: Spider) -> None:
+    for slot in self.slots:
+        self._schedule_slot_close(slot, spider)
+
+    if self._pending_close_tasks:  # pragma: no branch
+        await self._await_pending_tasks()
+
+    # Send FEED_EXPORTER_CLOSED signal
+    await self.crawler.signals.send_catch_log_async(signals.feed_exporter_closed)
+
+async def _await_pending_tasks(self) -> None:
+    tasks = list(self._pending_close_tasks)
+    if is_asyncio_available():
+        await asyncio.wait(cast(""list[asyncio.Task[None]]"", tasks))
+    else:
+        await DeferredList(cast(""list[Deferred[None]]"", tasks))",gpt-4o-2024-08-06,2026-10-01T06:16:23.264221+00:00,stop,256,154
+FUNC_0595,DataPipelines,"def _engine(
+    self,
+) -> libindex.IndexEngine | libindex.ExtensionEngine | libindex.MaskedIndexEngine:
+    # For base class (object dtype) we get ObjectEngine
+    dtype = self.dtype
+    target_values = self._get_engine_target()
+
+    if isinstance(dtype, ArrowDtype) and dtype.kind in ""Mm"":
+        return self._handle_arrow_dtype()
+
+    if isinstance(target_values, ExtensionArray):
+        return self._handle_extension_array(target_values)
+
+    return self._handle_standard_types(target_values, dtype)
+
+def _handle_arrow_dtype(self):
+    import pyarrow as pa
+
+    values = self._values
+    pa_type = values._pa_array.type  # type: ignore[union-attr]
+    if pa.types.is_timestamp(pa_type):
+        target_values = values._to_datetimearray()  # type: ignore[union-attr]
+        return libindex.DatetimeEngine(target_values._ndarray)
+    elif pa.types.is_duration(pa_type):
+        target_values = values._to_timedeltaarray()  # type: ignore[union-attr]
+        return libindex.TimedeltaEngine(target_values._ndarray)
+
+def _handle_extension_array(self, target_values):
+    if isinstance(target_values, (BaseMaskedArray, ArrowExtensionArray)):
+        try:
+            return _masked_engines[target_values.dtype.name](target_values)
+        except KeyError:
+            # Not supported yet e.g. decimal
+            pass
+    elif self._engine_type is libindex.ObjectEngine:
+        return libindex.ExtensionEngine(target_values)
+
+def _handle_standard_types(self, target_values, dtype):
+    # to avoid a reference cycle, bind `target_values` to a local variable, so
+    # `self` is not passed into the lambda.
+    if target_values.dtype == bool:
+        return libindex.BoolEngine(target_values)  # type: ignore[arg-type]
+    elif target_values.dtype == np.complex64:
+        return libindex.Complex64Engine(target_values)  # type: ignore[arg-type]
+    elif target_values.dtype == np.complex128:
+        return libindex.Complex128Engine(target_values)  # type: ignore[arg-type]
+    elif needs_i8_conversion(dtype):
+        # We need to keep M8/m8 dtype when initializing the Engine,
+        #  but don't want to change _get_engine_target bc it is used
+        #  elsewhere
+        # error: Item ""ExtensionArray"" of ""Union[ExtensionArray,
+        # ndarray[Any, Any]]"" has no attribute ""_ndarray""  [union-attr]
+        target_values = self._data._ndarray  # type: ignore[union-attr]
+    elif isinstance(dtype, StringDtype):
+        return libindex.StringObjectEngine(target_values, dtype.na_value)
+
+    # error: Argument 1 to ""ExtensionEngine"" has incompatible type
+    # ""ndarray[Any, Any]""; expected ""ExtensionArray""
+    return self._engine_type(target_values)  # type: ignore[arg-type]",gpt-4o-2024-08-06,2026-10-01T06:16:25.164978+00:00,stop,681,624
+FUNC_0001,Matrix,"def _compute(self, data: LinkPredMetricData) -> Tensor:
+    pred_rel_mat = data.pred_rel_mat[:, :self.k]
+    discount = self.discount[:pred_rel_mat.size(1)].view(1, -1)
+    dcg = (pred_rel_mat / discount).sum(dim=-1)
+
+    if self.weighted:
+        assert data.edge_label_weight is not None
+        pos = data.edge_label_weight_pos
+        assert pos is not None
+
+        discount = torch.cat([
+            self.discount,
+            self.discount.new_full((1,), fill_value=float('inf')),
+        ])
+        discount = discount[pos.clamp(max=self.k)]
+
+        idcg = scatter(
+            data.edge_label_weight / discount,
+            data.edge_label_index[0],
+            dim_size=data.pred_index_mat.size(0),
+            reduce='sum',
+        )
+    else:
+        assert self.idcg is not None
+        idcg = self.idcg[data.label_count.clamp(max=self.k)]
+
+    out = dcg / idcg
+    out[out.isnan() | out.isinf()] = 0.0
+    return out",gpt-4o-2024-08-06,2026-10-01T06:16:32.211196+00:00,stop,359,235
+FUNC_0475,Crypto,"def test_valid_multiple_digest_or_verify(self):
+    """"""Test multiple calls to digest and verify methods.""""""
+    def perform_digest_test(cipher, expected_mac, iterations):
+        for _ in range(iterations):
+            self.assertEqual(expected_mac, cipher.digest())
+
+    def perform_verify_test(cipher, mac, iterations):
+        for _ in range(iterations):
+            cipher.verify(mac)
+
+    # Multiple calls to digest
+    cipher = ChaCha20_Poly1305.new(key=self.key_256, nonce=self.nonce_96)
+    cipher.update(self.data_128)
+    first_mac = cipher.digest()
+    perform_digest_test(cipher, first_mac, 4)
+
+    # Multiple calls to verify
+    cipher = ChaCha20_Poly1305.new(key=self.key_256, nonce=self.nonce_96)
+    cipher.update(self.data_128)
+    perform_verify_test(cipher, first_mac, 5)",gpt-4o-2024-08-06,2026-10-01T06:16:34.635638+00:00,stop,247,187
+FUNC_0534,DataPipelines,"def _border_style(
+    self, style: str | None, width: str | None, color: str | None
+) -> str | None:
+    # convert styles and widths to openxml, one of:
+    #       'dashDot'
+    #       'dashDotDot'
+    #       'dashed'
+    #       'dotted'
+    #       'double'
+    #       'hair'
+    #       'medium'
+    #       'mediumDashDot'
+    #       'mediumDashDotDot'
+    #       'mediumDashed'
+    #       'slantDashDot'
+    #       'thick'
+    #       'thin'
+    
+    if style in (""none"", ""hidden""):
+        return ""none""
+
+    if width is None and style is None:
+        return None if color is None else ""none""
+
+    width_name = self._get_width_name(width)
+    if width_name is None:
+        return ""none""
+
+    if style in (None, ""groove"", ""ridge"", ""inset"", ""outset"", ""solid""):
+        return width_name
+
+    if style == ""double"":
+        return ""double""
+
+    if style == ""dotted"":
+        return ""dotted"" if width_name in (""hair"", ""thin"") else ""mediumDashDotDot""
+
+    if style == ""dashed"":
+        return ""dashed"" if width_name in (""hair"", ""thin"") else ""mediumDashed""
+
+    if style in self.BORDER_STYLE_MAP:
+        return self.BORDER_STYLE_MAP[style]
+
+    warnings.warn(
+        f""Unhandled border style format: {style!r}"",
+        CSSWarning,
+        stacklevel=find_stack_level(),
+    )
+    return ""none""",gpt-4o-2024-08-06,2026-10-01T06:16:36.955983+00:00,stop,529,361
+FUNC_0326,Crypto,"def generate(bits, randfunc):
+    """"""Randomly generate a fresh, new ElGamal key.
+
+    The key will be safe for use for both encryption and signature
+    (although it should be used for **only one** purpose).
+
+    Args:
+      bits (int):
+        Key length, or size (in bits) of the modulus *p*.
+        The recommended value is 2048.
+      randfunc (callable):
+        Random number generation function; it should accept
+        a single integer *N* and return a string of random
+        *N* random bytes.
+
+    Return:
+        an :class:`ElGamalKey` object
+    """"""
+
+    obj = ElGamalKey()
+
+    # Generate a safe prime p
+    obj.p = generate_probable_safe_prime(exact_bits=bits, randfunc=randfunc)
+    q = (obj.p - 1) >> 1
+
+    # Generate generator g
+    def is_valid_generator(g, p):
+        """"""Check if g is a valid generator.""""""
+        if g in (1, 2):
+            return False
+        if (p - 1) % g == 0:
+            return False
+        ginv = g.inverse(p)
+        if (p - 1) % ginv == 0:
+            return False
+        return True
+
+    while True:
+        candidate_g = pow(Integer.random_range(min_inclusive=2,
+                                               max_exclusive=obj.p,
+                                               randfunc=randfunc), 2, obj.p)
+        if is_valid_generator(candidate_g, obj.p):
+            obj.g = candidate_g
+            break
+
+    # Generate private key x
+    obj.x = Integer.random_range(min_inclusive=2,
+                                 max_exclusive=obj.p - 1,
+                                 randfunc=randfunc)
+    # Generate public key y
+    obj.y = pow(obj.g, obj.x, obj.p)
+    return obj",gpt-4o-2024-08-06,2026-10-01T06:16:40.511360+00:00,stop,627,402
+FUNC_0811,WebScraping,"def deferred_from_coro(o: Awaitable[_T] | _T2) -> Deferred[_T] | _T2:
+    """"""Convert a coroutine or other awaitable object into a Deferred,
+    or return the object as is if it isn't a coroutine.""""""
+    
+    if isinstance(o, Deferred):
+        return o
+    
+    if not inspect.isawaitable(o):
+        return o
+    
+    if not is_asyncio_available():
+        # wrapping the coroutine directly into a Deferred, this doesn't work correctly with coroutines
+        # that use asyncio, e.g. ""await asyncio.sleep(1)""
+        return Deferred.fromCoroutine(cast(""Coroutine[Deferred[Any], Any, _T]"", o))
+    
+    # wrapping the coroutine into a Future and then into a Deferred, this requires AsyncioSelectorReactor
+    return Deferred.fromFuture(asyncio.ensure_future(o))",gpt-4o-2024-08-06,2026-10-01T06:16:43.666738+00:00,stop,290,179
+FUNC_0135,Matrix,"def forward(self, x: Tensor, adj: Tensor, mask: Optional[Tensor] = None,
+            add_loop: bool = True) -> Tensor:
+    r""""""Forward pass.
+
+    Args:
+        x (torch.Tensor): Node feature tensor
+            :math:`\mathbf{X} \in \mathbb{R}^{B \times N \times F}`, with
+            batch-size :math:`B`, (maximum) number of nodes :math:`N` for
+            each graph, and feature dimension :math:`F`.
+        adj (torch.Tensor): Adjacency tensor
+            :math:`\mathbf{A} \in \mathbb{R}^{B \times N \times N}`.
+            The adjacency tensor is broadcastable in the batch dimension,
+            resulting in a shared adjacency matrix for the complete batch.
+        mask (torch.Tensor, optional): Mask matrix
+            :math:`\mathbf{M} \in {\{ 0, 1 \}}^{B \times N}` indicating
+            the valid nodes for each graph. (default: :obj:`None`)
+        add_loop (bool, optional): If set to :obj:`False`, the layer will
+            not automatically add self-loops to the adjacency matrices.
+            (default: :obj:`True`)
+    """"""
+    x = x.unsqueeze(0) if x.dim() == 2 else x
+    adj = adj.unsqueeze(0) if adj.dim() == 2 else adj
+    B, N, _ = adj.size()
+
+    out = torch.matmul(adj, x)
+    if add_loop:
+        out += (1 + self.eps) * x
+
+    out = self.nn(out)
+
+    if mask is not None:
+        mask = mask.view(B, N, 1).to(x.dtype)
+        out *= mask
+
+    return out",gpt-4o-2024-08-06,2026-10-01T06:16:46.561325+00:00,stop,500,386
+FUNC_0704,DataPipelines,"def _get_window_indexer(self) -> GroupByIndexer:
+    """"""
+    Return an indexer class that will compute the window start and end bounds
+
+    Returns
+    -------
+    GroupByIndexer
+    """"""
+    index_array = self._index_array
+    indexer_kwargs: dict[str, Any] | None = None
+
+    if isinstance(self.window, BaseIndexer):
+        rolling_indexer = type(self.window)
+        indexer_kwargs = {k: v for k, v in self.window.__dict__.items() if k != ""index_array""}
+        window = self.window
+    elif self._win_freq_i8 is not None:
+        rolling_indexer = VariableWindowIndexer
+        window = self._win_freq_i8  # type: ignore[assignment]
+    else:
+        rolling_indexer = FixedWindowIndexer
+        window = self.window
+
+    return GroupByIndexer(
+        index_array=index_array,
+        window_size=window,
+        groupby_indices=self._grouper.indices,
+        window_indexer=rolling_indexer,
+        indexer_kwargs=indexer_kwargs,
+    )",gpt-4o-2024-08-06,2026-10-01T06:16:49.379134+00:00,stop,409,227
+FUNC_0235,Matrix,"def forward(
+    self,
+    x: Tensor,
+    edge_index: Tensor,
+    edge_attr: OptTensor = None,
+    batch: OptTensor = None,
+    attn: OptTensor = None,
+) -> Tuple[Tensor, Tensor, OptTensor, OptTensor, Tensor, Tensor]:
+    r""""""Forward pass.
+
+    Args:
+        x (torch.Tensor): The node feature matrix.
+        edge_index (torch.Tensor): The edge indices.
+        edge_attr (torch.Tensor, optional): The edge features.
+            (default: :obj:`None`)
+        batch (torch.Tensor, optional): The batch vector
+            :math:`\mathbf{b} \in {\{ 0, \ldots, B-1\}}^N`, which assigns
+            each node to a specific example. (default: :obj:`None`)
+        attn (torch.Tensor, optional): Optional node-level matrix to use
+            for computing attention scores instead of using the node
+            feature matrix :obj:`x`. (default: :obj:`None`)
+    """"""
+    batch = edge_index.new_zeros(x.size(0)) if batch is None else batch
+    attn = x if attn is None else attn
+    attn = attn.view(-1, 1) if attn.dim() == 1 else attn
+    attn = self.gnn(attn, edge_index)
+
+    select_out = self.select(attn, batch)
+    perm, score = select_out.node_index, select_out.weight
+    assert score is not None
+
+    x = x[perm] * score.view(-1, 1)
+    if self.multiplier != 1:
+        x *= self.multiplier
+
+    connect_out = self.connect(select_out, edge_index, edge_attr, batch)
+
+    return (x, connect_out.edge_index, connect_out.edge_attr,
+            connect_out.batch, perm, score)",gpt-4o-2024-08-06,2026-10-01T06:16:51.981768+00:00,stop,517,399
+FUNC_0579,DataPipelines,"def _filter_usecols(usecols, names: SequenceT) -> SequenceT | list[Hashable]:
+    """"""
+    Filters the 'names' sequence based on the 'usecols' criteria.
+
+    Parameters:
+    - usecols: A callable or sequence that determines which columns to use.
+    - names: A sequence of column names.
+
+    Returns:
+    - A filtered list of column names or the original 'names' sequence.
+    """"""
+    usecols = evaluate_callable_usecols(usecols, names)
+    if usecols is None or len(names) == len(usecols):
+        return names
+
+    return [name for i, name in enumerate(names) if i in usecols or name in usecols]",gpt-4o-2024-08-06,2026-10-01T06:16:54.976220+00:00,stop,201,149
+FUNC_0903,WebScraping,"def _process_spider_exception(
+    self,
+    response: Response,
+    exception: Exception,
+    start_index: int = 0,
+) -> MutableAsyncChain[_T]:
+    # don't handle _InvalidOutput exception
+    if isinstance(exception, _InvalidOutput):
+        raise exception
+
+    method_list = islice(self.methods[""process_spider_exception""], start_index, None)
+
+    for method_index, method in enumerate(method_list, start=start_index):
+        if method is None:
+            continue
+
+        result = self._invoke_method(method, response, exception)
+
+        if isinstance(result, (Iterable, AsyncIterator)):
+            # stop exception handling by handing control over to the
+            # process_spider_output chain if an iterable has been returned
+            if isinstance(result, Iterable):
+                result = as_async_generator(result)
+            return self._process_spider_output(response, result, method_index + 1)
+
+        if result is not None:
+            msg = (
+                f""{global_object_name(method)} must return None ""
+                f""or an iterable, got {type(result)}""
+            )
+            raise _InvalidOutput(msg)
+
+    # Every remaining middleware declined to handle the exception, so the
+    # outer process_spider_output layers must let it through instead of
+    # offering it to those middlewares again.
+    with suppress(AttributeError):
+        exception._spidermw_unhandled = True  # type: ignore[attr-defined]
+    raise exception
+
+def _invoke_method(self, method, response, exception):
+    if method in self._mw_methods_requiring_spider:
+        return method(response=response, exception=exception, spider=self._spider)
+    return method(response=response, exception=exception)",gpt-4o-2024-08-06,2026-10-01T06:16:58.051466+00:00,stop,459,353
+FUNC_0089,Matrix,"def get_indptr(self) -> Tensor:
+        r""""""Returns the compressed index representation in case
+        :class:`EdgeIndex` is sorted.
+        """"""
+        if self._indptr is None:
+            if self.is_undirected and self._T_indptr is not None:
+                return self._T_indptr
+
+            dim = 0 if self.is_sorted_by_row else 1
+            self._indptr = index2ptr(self._data[dim], self.get_sparse_size(dim))
+
+        return self._indptr",gpt-4o-2024-08-06,2026-10-01T06:17:01.660426+00:00,stop,236,114
+FUNC_0137,Matrix,"def enable_multithreading(
+    self,
+    worker_threads: Optional[int] = None,
+) -> None:
+    r""""""Enables multithreading in worker subprocesses.
+    This option requires to change the start method from :obj:`""fork""` to
+    :obj:`""spawn""`.
+
+    .. code-block:: python
+
+        def run():
+            loader = NeigborLoader(data, num_workers=3)
+            with loader.enable_multithreading(10):
+                for batch in loader:
+                    pass
+
+        if __name__ == '__main__':
+            torch.set_start_method('spawn')
+            run()
+
+    Args:
+        worker_threads (int, optional): The number of threads to use in
+            each worker process.
+            By default, it uses half of all available CPU cores.
+            (default: :obj:`torch.get_num_threads() // num_workers`)
+    """"""
+    if worker_threads is None:
+        worker_threads = torch.get_num_threads() // self.num_workers
+
+    if self.num_workers <= 0:
+        raise ValueError(f""'enable_multithreading' needs to be performed ""
+                         f""with at least one worker ""
+                         f""(got {self.num_workers})"")
+
+    if worker_threads > torch.get_num_threads():
+        raise ValueError(f""'worker_threads' should be smaller than the ""
+                         f""total available number of threads ""
+                         f""{torch.get_num_threads()} ""
+                         f""(got {worker_threads})"")
+
+    context = torch.multiprocessing.get_context()._name
+    if context != 'spawn':
+        raise ValueError(f""'enable_multithreading' can only be used with ""
+                         f""the 'spawn' multiprocessing context ""
+                         f""(got {context})"")
+
+    self._worker_threads = worker_threads
+    self._old_worker_init_fn = WorkerInitWrapper(self.worker_init_fn)
+    try:
+        logging.debug(f""Using {worker_threads} threads in each worker"")
+        self.worker_init_fn = self._mt_init_fn
+        yield
+    finally:
+        self.worker_init_fn = self._old_worker_init_fn",gpt-4o-2024-08-06,2026-10-01T06:17:03.464448+00:00,stop,548,431
+FUNC_0857,WebScraping,"def setdefault_in_component_priority_dict(
+    self, name: str, cls: type, priority: int | None
+) -> None:
+    """"""Set the *cls* component in the *name* :ref:`component priority
+    dictionary <component-priority-dictionaries>` setting with *priority*
+    if not already defined (even as an import string).
+
+    If *cls* is not already defined, it is set regardless of the priority
+    of the *name* setting. The setting priority is not affected by this
+    change either.
+    """"""
+    component_priority_dict = self.getdict(name)
+    if not any(load_object(cls_or_path) == cls for cls_or_path in component_priority_dict):
+        component_priority_dict[cls] = priority
+        self.set(name, component_priority_dict, self.getpriority(name) or 0)",gpt-4o-2024-08-06,2026-10-01T06:17:06.943931+00:00,stop,298,178
+FUNC_0598,DataPipelines,"def _truthy_value(self):
+        # Fill values used for 'any'
+        kind_truthy_map = {
+            ""f"": 1.0,
+            ""i"": 1,
+            ""u"": 1
+        }
+        return kind_truthy_map.get(self.kind, True)",gpt-4o-2024-08-06,2026-10-01T06:17:09.461284+00:00,stop,167,65
+FUNC_0522,DataPipelines,"def take_nd(
+    arr: ArrayLike,
+    indexer,
+    axis: AxisInt = 0,
+    fill_value=lib.no_default,
+    allow_fill: bool = True,
+) -> ArrayLike:
+    """"""
+    Specialized Cython take which sets NaN values in one pass
+
+    This dispatches to ``take`` defined on ExtensionArrays.
+
+    Note: this function assumes that the indexer is a valid(ated) indexer with
+    no out of bound indices.
+
+    Parameters
+    ----------
+    arr : np.ndarray or ExtensionArray
+        Input array.
+    indexer : ndarray
+        1-D array of indices to take, subarrays corresponding to -1 value
+        indices are filed with fill_value
+    axis : int, default 0
+        Axis to take from
+    fill_value : any, default np.nan
+        Fill value to replace -1 values with
+    allow_fill : bool, default True
+        If False, indexer is assumed to contain no -1 values so no filling
+        will be done.  This short-circuits computation of a mask.  Result is
+        undefined if allow_fill == False and -1 is present in indexer.
+
+    Returns
+    -------
+    subarray : np.ndarray or ExtensionArray
+        May be the same type as the input, or cast to an ndarray.
+    """"""
+    fill_value = _get_fill_value(arr, fill_value)
+
+    if isinstance(arr, np.ndarray):
+        arr = np.asarray(arr)
+        return _take_nd_ndarray(arr, indexer, axis, fill_value, allow_fill)
+
+    # i.e. ExtensionArray
+    if not is_1d_only_ea_dtype(arr.dtype):
+        # i.e. DatetimeArray, TimedeltaArray
+        arr = cast(""NDArrayBackedExtensionArray"", arr)
+        return arr.take(indexer, fill_value=fill_value, allow_fill=allow_fill, axis=axis)
+
+    return arr.take(indexer, fill_value=fill_value, allow_fill=allow_fill)
+
+
+def _get_fill_value(arr, fill_value):
+    if fill_value is lib.no_default:
+        return na_value_for_dtype(arr.dtype, compat=False)
+    if lib.is_np_dtype(arr.dtype, ""mM""):
+        dtype, fill_value = maybe_promote(arr.dtype, fill_value)
+        if dtype != arr.dtype:
+            warnings.warn(
+                ""reindexing with a fill_value that cannot be held by the ""
+                ""original dtype is deprecated. Explicitly cast to a common ""
+                f""dtype (in this case {dtype}) instead."",
+                Pandas4Warning,
+                stacklevel=find_stack_level(),
+            )
+        if arr.dtype != dtype:
+            arr = arr.astype(dtype)
+    return fill_value",gpt-4o-2024-08-06,2026-10-01T06:17:10.968792+00:00,stop,713,572
+FUNC_0878,WebScraping,"def _requests_from_batch(
+    self,
+    contracts: list[Contract],
+    method: Callable[..., Any],
+    results: TestResult,
+) -> list[Request]:
+    request_cls = next((contract.request_cls for contract in contracts if contract.request_cls), Request)
+
+    # calculate request args
+    arg_names, base_kwargs = get_spec(request_cls.__init__)
+    arg_names.remove(""self"")
+
+    # Don't filter requests to allow testing different callbacks on the same URL.
+    base_kwargs.update({""dont_filter"": True, ""callback"": method})
+
+    # Contracts that opt into generating their own request (@url) each
+    # get their own request, built from every other contract in the
+    # batch; other batches only ever build a single, shared request.
+    generators = [contract for contract in contracts if contract.generates_request]
+    candidates: list[Contract | None] = generators or [None]
+
+    requests = []
+    for candidate in candidates:
+        kwargs = dict(base_kwargs)
+        for contract in contracts:
+            if contract in generators and contract is not candidate:
+                continue
+            kwargs = contract.adjust_request_args(kwargs)
+
+        # check if all positional arguments are defined in kwargs
+        if set(arg_names).issubset(kwargs):
+            request = request_cls(**kwargs)
+
+            # execute pre and post hooks in order
+            for contract in reversed(contracts):
+                request = contract.add_pre_hook(request, results)
+            for contract in contracts:
+                request = contract.add_post_hook(request, results)
+
+            self._clean_req(request, method, results)
+            requests.append(request)
+
+    return requests",gpt-4o-2024-08-06,2026-10-01T06:17:16.738509+00:00,stop,477,334
+FUNC_0624,DataPipelines,"def _header_line(self):
+    # Store line for reuse in _get_index_name
+    if self.header is not None:
+        return None
+
+    try:
+        return self._buffered_line()
+    except StopIteration as err:
+        if not self.names:
+            raise EmptyDataError(""No columns to parse from file"") from err
+        return self.names[:]",gpt-4o-2024-08-06,2026-10-01T06:17:20.033616+00:00,stop,201,80
+FUNC_0061,Matrix,"def _slice(
+    input: EdgeIndex,
+    dim: int,
+    start: Optional[int] = None,
+    end: Optional[int] = None,
+    step: int = 1,
+) -> Union[EdgeIndex, Tensor]:
+    # Check for no-op condition
+    if (start is None or start == 0 or start <= -input.size(dim)) and \
+       (end is None or end > input.size(dim)) and step == 1:
+        return input._shallow_copy()
+
+    # Perform slicing
+    out = aten.slice.Tensor(input._data, dim, start, end, step)
+
+    # Handle special case for dim == 1 or dim == -1
+    if dim in (1, -1):
+        if step != 1:
+            out = out.contiguous()
+
+        out = EdgeIndex(out)
+        out._sparse_size = input.sparse_size()
+
+        # Maintain sort order based on step direction
+        if step >= 0:
+            out._sort_order = input._sort_order
+        else:
+            out._sort_order = SortOrder.COL if input._sort_order == SortOrder.ROW else SortOrder.ROW
+
+    return out",gpt-4o-2024-08-06,2026-10-01T06:17:21.541144+00:00,stop,402,251
+FUNC_0478,Crypto,"def __init__(self, key, *args, **kwargs):
+    """"""Initialize an ARC4 cipher object
+
+    See also `new()` at the module level.""""""
+
+    ndrop = args[0] if args else kwargs.pop('drop', 0)
+
+    if len(key) not in key_size:
+        raise ValueError(""Incorrect ARC4 key length (%d bytes)"" % len(key))
+
+    self._state = VoidPointer()
+    result = _raw_arc4_lib.ARC4_stream_init(
+        c_uint8_ptr(key), c_size_t(len(key)), self._state.address_of()
+    )
+    if result != 0:
+        raise ValueError(""Error %d while creating the ARC4 cipher"" % result)
+
+    self._state = SmartPointer(self._state.get(), _raw_arc4_lib.ARC4_stream_destroy)
+
+    if ndrop > 0:
+        # This is OK even if the cipher is used for decryption,
+        # since encrypt and decrypt are actually the same thing
+        # with ARC4.
+        self.encrypt(b'\x00' * ndrop)
+
+    self.block_size = 1
+    self.key_size = len(key)",gpt-4o-2024-08-06,2026-10-01T06:17:24.261884+00:00,stop,381,245
+FUNC_0727,DataPipelines,"def _get_block_for_concat_plan(
+    mgr: BlockManager, bp: BlockPlacement, blkno: int, *, max_len: int
+) -> Block:
+    blk = mgr.blocks[blkno]
+
+    if _is_full_block_slice(bp, blk):
+        return blk
+
+    ax0_blk_indexer = mgr.blklocs[bp.indexer]
+    slc = lib.maybe_indices_to_slice(ax0_blk_indexer, max_len)
+
+    return blk.slice_block_columns(slc) if isinstance(slc, slice) else blk.take_block_columns(slc)
+
+def _is_full_block_slice(bp: BlockPlacement, blk: Block) -> bool:
+    return len(bp) == len(blk.mgr_locs) and blk.mgr_locs.is_slice_like and blk.mgr_locs.as_slice.step == 1",gpt-4o-2024-08-06,2026-10-01T06:17:29.565627+00:00,stop,371,175
+FUNC_0622,DataPipelines,"def __rmatmul__(self, other) -> DataFrame:
+    """"""
+    Matrix multiplication using binary `@` operator.
+    """"""
+    try:
+        return self.T.dot(np.transpose(other)).T
+    except ValueError as err:
+        if ""shape mismatch"" in str(err):
+            # GH#21581 give exception message for original shapes
+            msg = f""shapes {np.shape(other)} and {self.shape} not aligned""
+            raise ValueError(msg) from err
+        raise",gpt-4o-2024-08-06,2026-10-01T06:17:31.930280+00:00,stop,224,108
+FUNC_0687,DataPipelines,"def __contains__(self, key: str) -> bool:
+    """"""
+    check for existence of this key
+    can match the exact pathname or the pathnm w/o the leading '/'
+    """"""
+    node = self.get_node(key)
+    if node is None:
+        return False
+    name = node._v_pathname
+    return key in (name, name[1:])",gpt-4o-2024-08-06,2026-10-01T06:17:34.029836+00:00,stop,203,82
+FUNC_0666,DataPipelines,"def queryables(self) -> dict[str, Any]:
+    """"""return a dict of the kinds allowable columns for this object""""""
+    # mypy doesn't recognize DataFrame._AXIS_NAMES, so we re-write it here
+    axis_names = {0: ""index"", 1: ""columns""}
+
+    # Create queryables from index_axes, non_index_axes, and values_axes
+    index_queryables = [(a.cname, a) for a in self.index_axes]
+    non_index_queryables = [(axis_names[axis], None) for axis, _ in self.non_index_axes]
+    values_queryables = [
+        (v.cname, v) for v in self.values_axes if v.name in set(self.data_columns)
+    ]
+
+    return dict(index_queryables + non_index_queryables + values_queryables)",gpt-4o-2024-08-06,2026-10-01T06:17:35.978074+00:00,stop,271,172
+FUNC_0444,Crypto,"def _build_impl(lib, postfix):
+    from collections import namedtuple
+
+    funcs = (""ghash"", ""ghash_expand"", ""ghash_destroy"")
+    GHASH_Imp = namedtuple('_GHash_Imp', funcs)
+    
+    def get_function(name):
+        try:
+            return getattr(lib, name + ""_"" + postfix)
+        except AttributeError:
+            return None
+
+    imp_funcs = [get_function(func) for func in funcs]
+    return GHASH_Imp(*imp_funcs)",gpt-4o-2024-08-06,2026-10-01T06:17:39.675661+00:00,stop,238,106
+FUNC_0054,Matrix,"def _featurize(
+    self,
+    x: torch.Tensor,
+    mask: torch.Tensor,
+    batch: torch.Tensor,
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    # Extract atom coordinates
+    N, Ca, C, O = (x[:, i, :] for i in range(4))  # noqa: E741
+
+    # Calculate Cb coordinates
+    b = Ca - N
+    c = C - Ca
+    a = torch.cross(b, c, dim=-1)
+    Cb = -0.58273431 * a + 0.56802827 * b - 0.54067466 * c + Ca
+
+    # Filter valid atoms
+    valid_mask = mask.bool()
+    valid_Ca = Ca[valid_mask]
+    valid_batch = batch[valid_mask]
+
+    # Compute k-nearest neighbors graph
+    edge_index = knn_graph(valid_Ca, k=self.num_neighbors, batch=valid_batch, loop=True)
+
+    # Map to original indices
+    original_indices = torch.arange(Ca.size(0), device=x.device)[valid_mask]
+    edge_index_original = torch.stack(
+        [original_indices[edge_index[0]], original_indices[edge_index[1]]], dim=0
+    )
+
+    # Compute radial basis functions for all atom pairs
+    rbf_all = [
+        self._rbf(torch.sqrt(torch.sum((A[edge_index_original[0]] - B[edge_index_original[1]])**2, 1) + 1e-6))
+        for A, B in product([N, Ca, C, O, Cb], repeat=2)
+    ]
+
+    return edge_index_original, torch.cat(rbf_all, dim=-1)",gpt-4o-2024-08-06,2026-10-01T06:17:41.286631+00:00,stop,449,365
+FUNC_0568,DataPipelines,"def _simple_new(  # type: ignore[override]
+    cls,
+    values: npt.NDArray[np.timedelta64],
+    dtype: np.dtype[np.timedelta64] = TD64NS_DTYPE,
+) -> Self:
+    """"""
+    Create a new instance of the class with the given values and dtype.
+    
+    Parameters:
+    - cls: The class to instantiate.
+    - values: A numpy array of timedelta64 values.
+    - dtype: The numpy dtype for the timedelta64 values, default is TD64NS_DTYPE.
+    
+    Returns:
+    - An instance of the class.
+    """"""
+    # Ensure the dtype is a timedelta64 type and matches the values' dtype
+    if not (lib.is_np_dtype(dtype, ""m"") and not tslibs.is_unitless(dtype) and 
+            isinstance(values, np.ndarray) and dtype == values.dtype):
+        raise AssertionError(""Invalid dtype or values"")
+
+    return super()._simple_new(values=values, dtype=dtype)",gpt-4o-2024-08-06,2026-10-01T06:17:44.922329+00:00,stop,237,208
+FUNC_0439,Crypto,"def encode(data, marker, passphrase=None, randfunc=None):
+    """"""Encode a piece of binary data into PEM format.
+
+    Args:
+      data (byte string):
+        The piece of binary data to encode.
+      marker (string):
+        The marker for the PEM block (e.g. ""PUBLIC KEY"").
+        Note that there is no official master list for all allowed markers.
+        Still, you can refer to the OpenSSL_ source code.
+      passphrase (byte string):
+        If given, the PEM block will be encrypted. The key is derived from
+        the passphrase.
+      randfunc (callable):
+        Random number generation function; it accepts an integer N and returns
+        a byte string of random data, N bytes long. If not given, a new one is
+        instantiated.
+
+    Returns:
+      The PEM block, as a string.
+
+    .. _OpenSSL: https://github.com/openssl/openssl/blob/master/include/openssl/pem.h
+    """"""
+
+    def get_encryption_header(salt):
+        return ""Proc-Type: 4,ENCRYPTED\nDEK-Info: DES-EDE3-CBC,%s\n\n"" % tostr(hexlify(salt).upper())
+
+    def derive_key(passphrase, salt):
+        key = PBKDF1(passphrase, salt, 16, 1, MD5)
+        return key + PBKDF1(key + passphrase, salt, 8, 1, MD5)
+
+    if randfunc is None:
+        randfunc = get_random_bytes
+
+    out = ""-----BEGIN %s-----\n"" % marker
+
+    if passphrase:
+        salt = randfunc(8)
+        key = derive_key(passphrase, salt)
+        objenc = DES3.new(key, DES3.MODE_CBC, salt)
+        out += get_encryption_header(salt)
+        data = objenc.encrypt(pad(data, objenc.block_size))
+    elif passphrase is not None:
+        raise ValueError(""Empty password"")
+
+    chunks = [tostr(b2a_base64(data[i:i + 48])) for i in range(0, len(data), 48)]
+    out += """".join(chunks)
+    out += ""-----END %s-----"" % marker
+    return out",gpt-4o-2024-08-06,2026-10-01T06:17:49.885257+00:00,stop,608,476
+FUNC_0418,Crypto,"def _extract_subject_public_key_info(x509_certificate):
+    """"""Extract subjectPublicKeyInfo from a DER X.509 certificate.""""""
+
+    certificate = DerSequence().decode(x509_certificate, nr_elements=3)
+    tbs_certificate = DerSequence().decode(certificate[0], nr_elements=range(6, 11))
+
+    def get_version_and_index(tbs_cert):
+        try:
+            tbs_cert[0] + 1  # Version not present
+            return 1, 5
+        except TypeError:
+            version = DerInteger(explicit=0).decode(tbs_cert[0]).value
+            if version not in (2, 3):
+                raise ValueError(""Incorrect X.509 certificate version"")
+            return version, 6
+
+    _, index = get_version_and_index(tbs_certificate)
+    return tbs_certificate[index]",gpt-4o-2024-08-06,2026-10-01T06:17:53.352465+00:00,stop,277,180
+FUNC_0940,WebScraping,"def _compute_current_age(self, response: Response, request: Request, now: float) -> float:
+    """"""Compute the current age of the response based on the Date and Age headers.""""""
+    # Reference nsHttpResponseHead::ComputeCurrentAge
+    # https://dxr.mozilla.org/mozilla-central/source/netwerk/protocol/http/nsHttpResponseHead.cpp#658
+    date = rfc1123_to_epoch(response.headers.get(b""Date"")) or now
+    currentage = max(0, now - date) if now > date else 0
+
+    age_header = response.headers.get(b""Age"")
+    if age_header is not None:
+        try:
+            age = int(age_header)  # type: ignore[arg-type]
+            currentage = max(currentage, age)
+        except ValueError:
+            pass
+
+    return currentage",gpt-4o-2024-08-06,2026-10-01T06:17:55.897909+00:00,stop,306,179
+FUNC_0440,Crypto,"def _compute_ecdh(key_priv, key_pub):
+    """"""
+    Compute the ECDH shared secret.
+
+    :param key_priv: The private key
+    :param key_pub: The public key
+    :return: The shared secret as a byte array
+    :raises ValueError: If the computed point is at infinity
+    """"""
+    pointP = key_pub.pointQ * key_priv.d
+    if pointP.is_point_at_infinity():
+        raise ValueError(""Invalid ECDH point"")
+
+    curve_to_bytes = {
+        ""Curve25519"": 32,
+        ""Curve448"": 56
+    }
+
+    if key_priv.curve in curve_to_bytes:
+        z = bytearray(pointP.x.to_bytes(curve_to_bytes[key_priv.curve], byteorder='little'))
+    else:
+        # See Section 5.7.1.2 in NIST SP 800-56Ar3
+        z = long_to_bytes(pointP.x, pointP.size_in_bytes())
+
+    return z",gpt-4o-2024-08-06,2026-10-01T06:17:58.112183+00:00,stop,268,214
+FUNC_0486,Crypto,"def _create_openpgp_cipher(factory, **kwargs):
+    """"""Create a new block cipher, configured in OpenPGP mode.
+
+    :Parameters:
+      factory : module
+        The module.
+
+    :Keywords:
+      key : bytes/bytearray/memoryview
+        The secret key to use in the symmetric cipher.
+
+      IV : bytes/bytearray/memoryview
+        The initialization vector to use for encryption or decryption.
+
+        For encryption, the IV must be as long as the cipher block size.
+
+        For decryption, it must be 2 bytes longer (it is actually the
+        *encrypted* IV which was prefixed to the ciphertext).
+    """"""
+
+    iv = kwargs.pop(""IV"", None)
+    IV = kwargs.pop(""iv"", None)
+
+    if iv is None and IV is None:
+        iv = get_random_bytes(factory.block_size)
+    elif iv is not None and IV is not None:
+        raise TypeError(""You must either use 'iv' or 'IV', not both"")
+    else:
+        iv = iv or IV
+
+    key = kwargs.pop(""key"", None)
+    if key is None:
+        raise TypeError(""Missing component: 'key'"")
+
+    return OpenPgpMode(factory, key, iv, kwargs)",gpt-4o-2024-08-06,2026-10-01T06:18:00.448537+00:00,stop,385,265
+FUNC_0764,WebScraping,"def build_from_crawler(
+    objcls: Any,
+    crawler: Crawler,
+    /,
+    *args: Any,
+    **kwargs: Any,
+) -> Any:
+    """"""Construct a class instance using its ``from_crawler()`` or ``__init__()`` constructor.
+
+    .. versionadded:: 2.12
+
+    ``*args`` and ``**kwargs`` are forwarded to the constructor.
+
+    Raises ``TypeError`` if the resulting instance is ``None``.
+    """"""
+    method_name = ""from_crawler"" if hasattr(objcls, ""from_crawler"") else ""__new__""
+    instance = (
+        objcls.from_crawler(crawler, *args, **kwargs)
+        if method_name == ""from_crawler""
+        else objcls(*args, **kwargs)
+    )
+    if instance is None:
+        raise TypeError(f""{objcls.__qualname__}.{method_name} returned None"")
+    return instance",gpt-4o-2024-08-06,2026-10-01T06:18:03.304479+00:00,stop,309,201
+FUNC_0696,DataPipelines,"def _maybe_infer_ndim(
+    values: ArrayLike, placement: BlockPlacement, ndim: int | None
+) -> int:
+    """"""
+    If `ndim` is not provided, infer it from placement and values.
+    """"""
+    if ndim is not None:
+        return ndim
+
+    # GH#38134 Block constructor now assumes ndim is not None
+    if not isinstance(values.dtype, np.dtype):
+        return 1 if len(placement) != 1 else 2
+
+    return values.ndim",gpt-4o-2024-08-06,2026-10-01T06:18:05.582154+00:00,stop,238,112
+FUNC_0292,Crypto,"def unwrap(p8_private_key, passphrase=None):
+    """"""Unwrap a private key from a PKCS#8 blob (clear or encrypted).
+
+    Args:
+      p8_private_key (bytes):
+        The private key wrapped into a PKCS#8 container, DER encoded.
+
+    Keyword Args:
+      passphrase (byte string or string):
+        The passphrase to use to decrypt the blob (if it is encrypted).
+
+    Return:
+      A tuple containing
+
+       #. the algorithm identifier of the wrapped key (OID, dotted string)
+       #. the private key (bytes, DER encoded)
+       #. the associated parameters (bytes, DER encoded) or ``None``
+
+    Raises:
+      ValueError : if decoding fails
+    """"""
+
+    def decrypt_with_pbes(p8_private_key, passphrase):
+        """"""Attempt decryption with PBES1 and PBES2.""""""
+        try:
+            return PBES1.decrypt(p8_private_key, passphrase), None
+        except PbesError as e:
+            error_str = ""PBES1[%s]"" % str(e)
+        except ValueError:
+            error_str = ""PBES1[Invalid]""
+
+        try:
+            return PBES2.decrypt(p8_private_key, passphrase), None
+        except PbesError as e:
+            error_str += "",PBES2[%s]"" % str(e)
+        except ValueError:
+            error_str += "",PBES2[Invalid]""
+
+        return None, error_str
+
+    if passphrase is not None:
+        passphrase = tobytes(passphrase)
+        p8_private_key, error_str = decrypt_with_pbes(p8_private_key, passphrase)
+        if p8_private_key is None:
+            raise ValueError(""Error decoding PKCS#8 (%s)"" % error_str)
+
+    pk_info = DerSequence().decode(p8_private_key, nr_elements=(2, 3, 4, 5))
+    if len(pk_info) == 2 and not passphrase:
+        raise ValueError(""Not a valid clear PKCS#8 structure ""
+                         ""(maybe it is encrypted?)"")
+
+    if pk_info[0] not in (0, 1) or len(pk_info) not in (3, 4, 5):
+        raise ValueError(""Not a valid PrivateKeyInfo SEQUENCE"")
+
+    algo = DerSequence().decode(pk_info[1], nr_elements=(1, 2))
+    algo_oid = DerObjectId().decode(algo[0]).value
+    algo_params = None if len(algo) == 1 else algo[1]
+
+    if algo_params is not None:
+        try:
+            DerNull().decode(algo_params)
+            algo_params = None
+        except:
+            pass
+
+    private_key = DerOctetString().decode(pk_info[2]).payload
+
+    return (algo_oid, private_key, algo_params)",gpt-4o-2024-08-06,2026-10-01T06:18:07.053192+00:00,stop,930,598
+FUNC_0721,DataPipelines,"def _searchsorted_monotonic(self, label, side: Literal[""left"", ""right""] = ""left""):
+    if self.is_monotonic_increasing and isinstance(label, (Timestamp, Timedelta)):
+        label_unit = abbrev_to_npy_unit(label.unit)
+        self_unit = abbrev_to_npy_unit(self.unit)
+        
+        if label_unit > self_unit:
+            # For non-matching units we can safely round down (with side=right)
+            # This is needed for GH#63262
+            label = label.as_unit(self.unit) if side == ""right"" else label.ceil(self.unit).as_unit(self.unit)
+
+    return super()._searchsorted_monotonic(label, side)",gpt-4o-2024-08-06,2026-10-01T06:18:12.041398+00:00,stop,280,152
+FUNC_0603,DataPipelines,"def _sanitize_column(self, value) -> tuple[ArrayLike, BlockValuesRefs | None]:
+    """"""
+    Ensures new columns (which go into the BlockManager as new blocks) are
+    always copied (or a reference is being tracked to them under CoW)
+    and converted into an array.
+
+    Parameters
+    ----------
+    value : scalar, Series, or array-like
+
+    Returns
+    -------
+    tuple of numpy.ndarray or ExtensionArray and optional BlockValuesRefs
+    """"""
+    self._ensure_valid_index(value)
+
+    # Using a DataFrame would mean coercing values to one dtype
+    assert not isinstance(value, DataFrame)
+
+    if is_dict_like(value) and not isinstance(value, Series):
+        value = Series(value)
+        return _reindex_for_setitem(value, self.index)
+
+    if is_list_like(value):
+        com.require_length_match(value, self.index)
+
+    return sanitize_array(value, self.index, copy=True, allow_2d=True), None",gpt-4o-2024-08-06,2026-10-01T06:18:14.359015+00:00,stop,322,206
+FUNC_0783,WebScraping,"def to_bytes(
+    text: str | bytes, encoding: str | None = None, errors: str = ""strict""
+) -> bytes:
+    """"""Return the binary representation of ``text``. If ``text``
+    is already a bytes object, return it as-is.""""""
+    if isinstance(text, bytes):
+        return text
+    if isinstance(text, str):
+        encoding = encoding or ""utf-8""
+        return text.encode(encoding, errors)
+    raise TypeError(
+        f""to_bytes must receive a str or bytes object, got {type(text).__name__}""
+    )",gpt-4o-2024-08-06,2026-10-01T06:18:16.560190+00:00,stop,246,127
+FUNC_0513,DataPipelines,"def _needs_i8_conversion(self, key) -> bool:
+    """"""
+    Check if a given key needs i8 conversion. Conversion is necessary for
+    Timestamp, Timedelta, DatetimeIndex, and TimedeltaIndex keys. An
+    Interval-like requires conversion if its endpoints are one of the
+    aforementioned types.
+
+    Assumes that any list-like data has already been cast to an Index.
+
+    Parameters
+    ----------
+    key : scalar or Index-like
+        The key that should be checked for i8 conversion
+
+    Returns
+    -------
+    bool
+    """"""
+    if isinstance(getattr(key, ""dtype"", None), IntervalDtype) or isinstance(key, Interval):
+        return self._needs_i8_conversion(key.left)
+
+    return isinstance(key, (Timestamp, Timedelta, DatetimeIndex, TimedeltaIndex))",gpt-4o-2024-08-06,2026-10-01T06:18:18.512961+00:00,stop,307,177
+FUNC_0898,WebScraping,"def _get_form(
+    response: TextResponse,
+    formname: str | None,
+    formid: str | None,
+    formnumber: int,
+    formxpath: str | None,
+) -> FormElement:
+    """"""Find the wanted form element within the given response.""""""
+    root = response.selector.root
+    forms = root.xpath(""//form"")
+    if not forms:
+        raise ValueError(f""No <form> element found in {response}"")
+
+    def find_form_by_attribute(attribute: str, value: str) -> FormElement | None:
+        f = root.xpath(f'//form[@{attribute}=""{value}""]')
+        return cast(""FormElement"", f[0]) if f else None
+
+    if formname is not None:
+        form = find_form_by_attribute(""name"", formname)
+        if form:
+            return form
+
+    if formid is not None:
+        form = find_form_by_attribute(""id"", formid)
+        if form:
+            return form
+
+    if formxpath is not None:
+        nodes = root.xpath(formxpath)
+        if nodes:
+            el = nodes[0]
+            while el is not None:
+                if el.tag == ""form"":
+                    return cast(""FormElement"", el)
+                el = el.getparent()
+        raise ValueError(f""No <form> element found with {formxpath}"")
+
+    try:
+        return cast(""FormElement"", forms[formnumber])
+    except IndexError:
+        raise IndexError(f""Form number {formnumber} not found in {response}"") from None",gpt-4o-2024-08-06,2026-10-01T06:18:20.675515+00:00,stop,450,324
+FUNC_0027,Matrix,"def _hard_concrete(
+    self,
+    input_element: Tensor,
+    summarize_penalty: bool = True,
+    beta: float = 1 / 3,
+    gamma: float = -0.2,
+    zeta: float = 1.2,
+    loc_bias: int = 2,
+    min_val: int = 0,
+    max_val: int = 1,
+    training: bool = True,
+) -> Tuple[Tensor, Tensor]:
+    r""""""Helps to set the edge mask while sampling its values from the
+    hard-concrete distribution.
+    """"""
+    input_element += loc_bias
+
+    if training:
+        u = torch.empty_like(input_element).uniform_(1e-6, 1.0 - 1e-6)
+        s = torch.sigmoid((torch.log(u) - torch.log(1 - u) + input_element) / beta)
+        penalty = torch.sigmoid(input_element - beta * math.log(-gamma / zeta))
+    else:
+        s = torch.sigmoid(input_element)
+        penalty = torch.zeros_like(input_element)
+
+    if summarize_penalty:
+        penalty = penalty.mean()
+
+    s = s * (zeta - gamma) + gamma
+    clipped_s = s.clamp(min_val, max_val)
+
+    clip_value = (torch.min(clipped_s) + torch.max(clipped_s)) / 2
+    hard_concrete = (clipped_s > clip_value).float()
+    clipped_s = clipped_s + (hard_concrete - clipped_s).detach()
+
+    return clipped_s, penalty",gpt-4o-2024-08-06,2026-10-01T06:18:25.185546+00:00,stop,453,331
+FUNC_0360,Crypto,"def generate_cipher(self, module, key_size, params):
+    params_dict = dict(x.split(""="") for x in params.split("" "")) if params else {}
+
+    # Determine key
+    key_multiplier = 2 if params_dict.get('ks') == ""x2"" else 1
+    key = rng(key_multiplier * key_size)
+    gen_tuple = [key]
+
+    # Determine mode
+    mode = params_dict.get(""mode"")
+    if mode:
+        mode_value = getattr(module, mode, None)
+        if mode_value is None:
+            raise ModeNotAvailable()
+        gen_tuple.append(mode_value)
+
+    # Determine IV/nonce
+    iv_length = params_dict.get(""iv"") or params_dict.get(""nonce"")
+    if iv_length:
+        iv_length = module.block_size if iv_length == ""bs"" else int(iv_length)
+        iv = rng(iv_length)
+        gen_tuple.append(iv)
+
+    # Handle CTR mode specifics
+    le = params_dict.get(""little_endian"")
+    if le is not None:
+        le = le == ""True""
+        gen_tuple.pop()  # Remove iv from parameters
+        ctr = Crypto.Util.Counter.new(
+            module.block_size * 8,
+            initial_value=bytes_to_long(iv),
+            little_endian=le,
+            allow_wraparound=True
+        )
+        gen_dict = {'counter': ctr}
+    else:
+        gen_dict = {}
+
+    # Generate cipher
+    return module.new(*gen_tuple, **gen_dict)",gpt-4o-2024-08-06,2026-10-01T06:18:28.271009+00:00,stop,475,309
+FUNC_0377,Crypto,"def c_uint8_ptr(data):
+    """"""
+    Casts the input data to a C uint8 pointer if possible.
+    
+    :param data: The data to be cast.
+    :return: The casted data or raises a TypeError if the data type is unsupported.
+    """"""
+    if isinstance(data, _buffer_type):
+        # This only works for cffi >= 1.7
+        return ffi.cast(uint8_t_type, ffi.from_buffer(data))
+    
+    if byte_string(data) or isinstance(data, _Array):
+        return data
+    
+    raise TypeError(f""Object type {type(data)} cannot be passed to C code"")",gpt-4o-2024-08-06,2026-10-01T06:18:31.464335+00:00,stop,203,136
+FUNC_0569,DataPipelines,"def is_list_like_indexer(key) -> bool:
+    """"""
+    Check if we have a list-like indexer that is *not* a NamedTuple.
+
+    Parameters
+    ----------
+    key : object
+
+    Returns
+    -------
+    bool
+    """"""
+    # allow a list_like, but exclude NamedTuples which can be indexers
+    is_named_tuple = isinstance(key, tuple) and type(key) is not tuple
+    return is_list_like(key) and not is_named_tuple",gpt-4o-2024-08-06,2026-10-01T06:18:33.339516+00:00,stop,212,105
+FUNC_0516,DataPipelines,"def _agg_py_fallback(
+    self, how: str, values: ArrayLike, ndim: int, alt: Callable
+) -> ArrayLike:
+    """"""
+    Fallback to pure-python aggregation if _cython_operation raises
+    NotImplementedError.
+    """"""
+    # We get here with a) EADtypes and b) object dtype
+    assert alt is not None
+
+    ser = self._create_series_from_values(values)
+
+    try:
+        res_values = self._grouper.agg_series(ser, alt)
+    except Exception as err:
+        msg = f""agg function failed [how->{how},dtype->{ser.dtype}]""
+        raise type(err)(msg) from err
+
+    res_values = self._cast_result_values(res_values, ser.dtype)
+
+    return ensure_block_shape(res_values, ndim=ndim)
+
+def _create_series_from_values(self, values: ArrayLike) -> Series:
+    if values.ndim == 1:
+        return Series(values, copy=False)
+    else:
+        df = DataFrame(values.T, dtype=values.dtype)
+        assert df.shape[1] == 1
+        return df.iloc[:, 0]
+
+def _cast_result_values(self, res_values: ArrayLike, dtype: DtypeObj) -> ArrayLike:
+    if dtype == object:
+        return res_values.astype(object, copy=False)
+    elif is_string_dtype(dtype):
+        string_array_cls = dtype.construct_array_type()  # type: ignore[union-attr]
+        return string_array_cls._from_sequence(res_values, dtype=dtype)
+    return res_values",gpt-4o-2024-08-06,2026-10-01T06:18:34.845228+00:00,stop,604,331
+FUNC_0782,WebScraping,"def _get_request_cookies(self, jar: CookieJar, request: Request) -> Sequence[Cookie]:
+    """"""
+    Extract cookies from the Request.cookies attribute
+    """"""
+    if not request.cookies:
+        return ()
+    
+    cookies: Iterable[VerboseCookie] = _to_verbose_cookies(request.cookies)
+    for cookie in cookies:
+        cookie.setdefault(""secure"", urlparse_cached(request).scheme == ""https"")
+    
+    formatted_cookies = (
+        self._format_cookie(c, request) for c in cookies
+    )
+    filtered_cookies = filter(None, formatted_cookies)
+    response = Response(request.url, headers={""Set-Cookie"": filtered_cookies})
+    
+    return jar.make_cookies(response, request)",gpt-4o-2024-08-06,2026-10-01T06:18:38.421747+00:00,stop,251,151
+FUNC_0807,WebScraping,"def _dqpush(self, request: Request) -> bool:
+    if self.dqs is None:
+        return False
+
+    try:
+        self.dqs.push(request)
+    except ValueError as e:  # non serializable request
+        self._handle_unserializable_request(request, e)
+        return False
+    finally:
+        self._sync_dqs_state()
+
+    return True
+
+def _handle_unserializable_request(self, request: Request, exception: ValueError):
+    if self.logunser:
+        msg = (
+            ""Unable to serialize request: %(request)s - reason:""
+            "" %(reason)s - no more unserializable requests will be""
+            "" logged (stats being collected)""
+        )
+        logger.warning(
+            msg,
+            {""request"": request, ""reason"": exception},
+            exc_info=True,
+            extra={""spider"": self.spider},
+        )
+        self.logunser = False
+
+    assert self.stats is not None
+    self.stats.inc_value(""scheduler/unserializable"")",gpt-4o-2024-08-06,2026-10-01T06:18:40.502303+00:00,stop,298,213
+FUNC_0430,Crypto,"def load_pycryptodome_raw_lib(name, cdecl):
+    """"""Load a shared library and return a handle to it.
+
+    @name,  the name of the library expressed as a PyCryptodome module,
+            for instance Crypto.Cipher._raw_cbc.
+
+    @cdecl, the C function declarations.
+    """"""
+    dir_comps, basename = name.rsplit(""."", 1)
+    attempts = []
+
+    for ext in extension_suffixes:
+        filename = basename + ext
+        full_name = pycryptodome_filename(dir_comps.split("".""), filename)
+        
+        if os.path.isfile(full_name):
+            try:
+                return load_lib(full_name, cdecl)
+            except OSError as exp:
+                attempts.append(f""Cannot load '{filename}': {exp}"")
+        else:
+            attempts.append(f""Not found '{filename}'"")
+
+    raise OSError(f""Cannot load native module '{name}': {', '.join(attempts)}"")",gpt-4o-2024-08-06,2026-10-01T06:18:43.384176+00:00,stop,330,201
+FUNC_0864,WebScraping,"def push(self, request: Request) -> None:
+    """"""Push a request onto the appropriate queue based on its priority.""""""
+    priority = self.priority(request)
+    is_start_request = request.meta.get(""is_start_request"", False)
+    queue_dict = self._start_queues if is_start_request and self._start_queue_cls else self.queues
+    factory_method = self._sqfactory if is_start_request and self._start_queue_cls else self.qfactory
+
+    if priority not in queue_dict:
+        queue_dict[priority] = factory_method(priority)
+        self.changed = True
+
+    queue_dict[priority].push(request)  # this may fail (eg. serialization error)
+
+    if self.curprio is None or priority < self.curprio:
+        self.curprio = priority",gpt-4o-2024-08-06,2026-10-01T06:18:47.043929+00:00,stop,285,164
+FUNC_0647,DataPipelines,"def _col_idx_to_axis_idx(self, col_idx: int) -> int:
+    """"""Return the index of the axis where the column at col_idx should be plotted""""""
+    if isinstance(self.subplots, list):
+        # Subplots is a list: some columns will be grouped together in the same ax
+        return self._find_group_index(col_idx)
+    # subplots is True: one ax per column
+    return col_idx
+
+def _find_group_index(self, col_idx: int) -> int:
+    """"""Helper function to find the group index for a given column index.""""""
+    return next(
+        group_idx
+        for group_idx, group in enumerate(self.subplots)
+        if col_idx in group
+    )",gpt-4o-2024-08-06,2026-10-01T06:18:48.940798+00:00,stop,231,151
+FUNC_0097,Matrix,"async def create_artifacts(state: QAGenerationState) -> Dict[str, Any]:
+    logger.info('Create artifacts for task %s', state['task_id'])
+    client = state.get('client')
+    use_artifact = state.get('use_artifact')
+    logger.debug('use_artifact? %s', use_artifact)
+    
+    if not use_artifact:
+        return {'top_artifacts': None}
+
+    segments = state.get('segments', [])
+    text_artifacts = state.get('text_artifacts') or get_text_artifacts(segments, client)
+    logger.info('text artifacts: %d', len(text_artifacts))
+
+    try:
+        parts = state.get('parts', 3)
+        splits = split_segments(segments, parts=parts)
+        artifacts_str_splits = [
+            ArtifactExtractor(client).format_artifacts_for_prompt(
+                ArtifactExtractor(client).get_top_artifacts_for_qa(
+                    text_artifacts, top_k=5, use_llm_ranking=True
+                )
+            )
+            for _ in splits
+        ]
+        return {'top_artifacts': artifacts_str_splits}
+    except Exception as e:
+        logger.warning('create_artifacts failed %s', e)
+        return {'top_artifacts': None}",gpt-4o-2024-08-06,2026-10-01T06:18:50.901137+00:00,stop,481,262
+FUNC_0397,Crypto,"def test_compilation(program, extra_cc_options=None, extra_libraries=None, msg=''):
+    """"""Test if a certain C program can be compiled.""""""
+    import os
+    import sys
+    from distutils import ccompiler
+    from distutils.errors import CCompilerError
+
+    def create_temp_file(directory, filename, content):
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        filepath = os.path.join(directory, filename)
+        with open(filepath, 'w') as f:
+            f.write(content)
+        return filepath
+
+    def mute_output():
+        if not (debug or os.name == 'nt'):
+            old_stdout = os.dup(sys.stdout.fileno())
+            old_stderr = os.dup(sys.stderr.fileno())
+            dev_null = open(os.devnull, ""w"")
+            os.dup2(dev_null.fileno(), sys.stdout.fileno())
+            os.dup2(dev_null.fileno(), sys.stderr.fileno())
+            return old_stdout, old_stderr, dev_null
+        return None, None, None
+
+    def restore_output(old_stdout, old_stderr, dev_null):
+        if not (debug or os.name == 'nt'):
+            if old_stdout is not None:
+                os.dup2(old_stdout, sys.stdout.fileno())
+            if old_stderr is not None:
+                os.dup2(old_stderr, sys.stderr.fileno())
+            if dev_null is not None:
+                dev_null.close()
+
+    def cleanup_files(files):
+        for f in files:
+            try:
+                os.remove(f)
+            except OSError:
+                pass
+
+    build_dir = ""build""
+    source_file = create_temp_file(build_dir, ""test1.c"", program)
+    executable_file = os.path.join(build_dir, ""test1.out"")
+
+    debug = bool(os.environ.get('PYCRYPTODOME_DEBUG', None))
+    if msg:
+        print(f""Testing support for {msg}"")
+
+    old_stdout, old_stderr, dev_null = mute_output()
+
+    try:
+        compiler = ccompiler.new_compiler()
+        distutils.sysconfig.customize_compiler(compiler)
+
+        extra_linker_options = [""/MANIFEST""] if compiler.compiler_type == 'msvc' else []
+        if compiler.compiler_type == 'unix':
+            compiler.set_executables(linker_exe=compiler.compiler)
+
+        objects = compiler.compile([source_file], extra_postargs=extra_cc_options)
+        compiler.link_executable(objects, executable_file, libraries=extra_libraries,
+                                 extra_preargs=extra_linker_options)
+        result = True
+    except (CCompilerError, OSError):
+        result = False
+
+    cleanup_files(objects + [source_file, executable_file])
+    restore_output(old_stdout, old_stderr, dev_null)
+
+    if msg:
+        print(f""Target does{' not' if not result else ''} support {msg}"")
+
+    return result",gpt-4o-2024-08-06,2026-10-01T06:18:53.248907+00:00,stop,692,597
+FUNC_0020,Matrix,"def global_add_pool(x: Tensor, batch: Optional[Tensor], size: Optional[int] = None) -> Tensor:
+    r""""""Returns batch-wise graph-level-outputs by adding node features
+    across the node dimension.
+
+    For a single graph :math:`\mathcal{G}_i`, its output is computed by
+
+    .. math::
+        \mathbf{r}_i = \sum_{n=1}^{N_i} \mathbf{x}_n.
+
+    Functional method of the
+    :class:`~torch_geometric.nn.aggr.SumAggregation` module.
+
+    Args:
+        x (torch.Tensor): Node feature matrix
+            :math:`\mathbf{X} \in \mathbb{R}^{(N_1 + \ldots + N_B) \times F}`.
+        batch (torch.Tensor, optional): The batch vector
+            :math:`\mathbf{b} \in {\{ 0, \ldots, B-1\}}^N`, which assigns
+            each node to a specific example.
+        size (int, optional): The number of examples :math:`B`.
+            Automatically calculated if not given. (default: :obj:`None`)
+    """"""
+    if batch is None:
+        return x.sum(dim=-1 if x.dim() == 1 else -2, keepdim=x.dim() <= 2)
+    return scatter(x, batch, dim=-1 if x.dim() == 1 else -2, dim_size=size, reduce='sum')",gpt-4o-2024-08-06,2026-10-01T06:18:58.145286+00:00,stop,432,315
+FUNC_0306,Crypto,"def _decodeFromStream(self, s, strict):
+    """"""Decode a complete DER OBJECT ID from a file.""""""
+
+    # Fill up self.payload
+    DerObject._decodeFromStream(self, s, strict)
+
+    # Derive self.value from self.payload
+    p = BytesIO_EOF(self.payload)
+
+    subcomps = []
+    v = 0
+    while p.remaining_data():
+        c = p.read_byte()
+        v = (v << 7) + (c & 0x7F)
+        if not (c & 0x80):
+            subcomps.append(v)
+            v = 0
+
+    if not subcomps:
+        raise ValueError(""Empty payload"")
+
+    first_subcomp = subcomps[0]
+    if first_subcomp < 40:
+        subcomps[:1] = [0, first_subcomp]
+    elif first_subcomp < 80:
+        subcomps[:1] = [1, first_subcomp - 40]
+    else:
+        subcomps[:1] = [2, first_subcomp - 80]
+
+    self.value = ""."".join(map(str, subcomps))",gpt-4o-2024-08-06,2026-10-01T06:19:01.158199+00:00,stop,373,247
+FUNC_0805,WebScraping,"def decode_robotstxt(
+    robotstxt_body: bytes, spider: Spider | None, to_native_str_type: bool = False
+) -> str:
+    try:
+        decode_method = to_unicode if to_native_str_type else lambda x: x.decode(""utf-8-sig"", errors=""ignore"")
+        body_decoded = decode_method(robotstxt_body)
+    except UnicodeDecodeError:
+        # If we found garbage or robots.txt in an encoding other than UTF-8, disregard it.
+        # Switch to 'allow all' state.
+        logger.warning(
+            ""Failure while parsing robots.txt. File either contains garbage or ""
+            ""is in an encoding other than UTF-8, treating it as an empty file."",
+            exc_info=sys.exc_info(),
+            extra={""spider"": spider},
+        )
+        body_decoded = """"
+    return body_decoded",gpt-4o-2024-08-06,2026-10-01T06:19:03.957509+00:00,stop,300,183
+FUNC_0283,Crypto,"def decrypt(self, ciphertext, output=None):
+    """"""Decrypt data with the key and the parameters set at initialization.
+
+    A cipher object is stateful: once you have decrypted a message
+    you cannot decrypt (or encrypt) another message with the same
+    object.
+
+    The data to decrypt can be broken up in two or
+    more pieces and `decrypt` can be called multiple times.
+
+    That is, the statement:
+
+        >>> c.decrypt(a) + c.decrypt(b)
+
+    is equivalent to:
+
+         >>> c.decrypt(a+b)
+
+    This function does not remove any padding from the plaintext.
+
+    :Parameters:
+      ciphertext : bytes/bytearray/memoryview
+        The piece of data to decrypt.
+        It can be of any length.
+    :Keywords:
+      output : bytearray/memoryview
+        The location where the plaintext must be written to.
+        If ``None``, the plaintext is returned.
+    :Return:
+      If ``output`` is ``None``, the plaintext is returned as ``bytes``.
+      Otherwise, ``None``.
+    """"""
+
+    if ""decrypt"" not in self._next:
+        raise TypeError(""decrypt() cannot be called after encrypt()"")
+    self._next = [""decrypt""]
+
+    plaintext = self._prepare_output_buffer(ciphertext, output)
+
+    result = raw_ctr_lib.CTR_decrypt(
+        self._state.get(),
+        c_uint8_ptr(ciphertext),
+        c_uint8_ptr(plaintext),
+        c_size_t(len(ciphertext))
+    )
+    self._handle_decryption_result(result)
+
+    return get_raw_buffer(plaintext) if output is None else None
+
+def _prepare_output_buffer(self, ciphertext, output):
+    if output is None:
+        return create_string_buffer(len(ciphertext))
+    
+    if not is_writeable_buffer(output):
+        raise TypeError(""output must be a bytearray or a writeable memoryview"")
+
+    if len(ciphertext) != len(output):
+        raise ValueError(""output must have the same length as the input""
+                         ""  (%d bytes)"" % len(output))
+    
+    return output
+
+def _handle_decryption_result(self, result):
+    if result:
+        if result == 0x60002:
+            raise OverflowError(""The counter has wrapped around in""
+                                "" CTR mode"")
+        raise ValueError(""Error %X while decrypting in CTR mode"" % result)",gpt-4o-2024-08-06,2026-10-01T06:19:06.568053+00:00,stop,570,492
+FUNC_0968,WebScraping,"async def stop(self) -> None:
+    """"""Stop the HTTP server and remove the job file.""""""
+    self._remove_job_file()
+    if self._runner is not None:
+        await self._cleanup_runner()
+
+def _remove_job_file(self) -> None:
+    """"""Remove the job file if it exists.""""""
+    if self._job_file_path is not None:
+        with contextlib.suppress(OSError):
+            self._job_file_path.unlink(missing_ok=True)
+        self._job_file_path = None
+
+async def _cleanup_runner(self) -> None:
+    """"""Cleanup the HTTP server runner.""""""
+    try:
+        await self._runner.cleanup()
+    except Exception:
+        logger.exception(
+            ""Error stopping the remote control HTTP server"",
+            extra={""crawler"": self._crawler},
+        )
+    finally:
+        self._stash.clear()
+        self._runner = None
+        self._auth_token = None",gpt-4o-2024-08-06,2026-10-01T06:19:10.619679+00:00,stop,267,189
+FUNC_0893,WebScraping,"def _make_ssl_context(settings: BaseSettings) -> ssl.SSLContext:
+    """"""Create an :class:`ssl.SSLContext` instance according to the settings.
+
+    It's intended to be used in an HTTPS download handler.
+    """"""
+    tls_min_ver, tls_max_ver = _get_tls_version_limits(
+        settings, _STDLIB_VERSION_MAP.__getitem__
+    )
+    ciphers_setting: str | None = settings[""DOWNLOADER_CLIENT_TLS_CIPHERS""]
+    verify_setting = settings.getbool(""DOWNLOAD_VERIFY_CERTIFICATES"")
+
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    ctx.check_hostname = verify_setting
+    ctx.verify_mode = ssl.CERT_REQUIRED if verify_setting else ssl.CERT_NONE
+
+    if verify_setting:
+        ctx.load_default_certs()
+
+    if tls_min_ver is not None:
+        ctx.minimum_version = tls_min_ver
+    if tls_max_ver is not None:
+        ctx.maximum_version = tls_max_ver
+    if ciphers_setting:
+        ctx.set_ciphers(ciphers_setting)
+    if keylog_filename := _get_keylog_filename():
+        ctx.keylog_filename = keylog_filename
+
+    return ctx",gpt-4o-2024-08-06,2026-10-01T06:19:12.720824+00:00,stop,369,244
+FUNC_0376,Crypto,"def setup(app):
+    def check_python_version():
+        if python_version[0] < 3:
+            logger.error(""Python 2 is not supported with sphinx_rtd_theme, update to Python 3."")
+
+    def check_html4_writer():
+        if app.config.html4_writer:
+            logger.error(""'html4_writer' is not supported with sphinx_rtd_theme."")
+
+    def setup_jquery_extension():
+        if sphinx_version >= (6, 0, 0):
+            app.setup_extension(""sphinxcontrib.jquery"")
+            from sphinxcontrib.jquery import add_js_files as jquery_add_js_files
+            jquery_add_js_files(app, app.config)
+
+    def register_theme():
+        app.add_html_theme('sphinx_rtd_theme', path.abspath(path.dirname(__file__)))
+
+    def add_message_catalog():
+        rtd_locale_path = path.join(path.abspath(path.dirname(__file__)), 'locale')
+        app.add_message_catalog('sphinx', rtd_locale_path)
+
+    def configure_app():
+        app.connect('config-inited', config_initiated)
+        app.config.html_permalinks_icon = ""\uf0c1""
+        app.connect(""html-page-context"", extend_html_context)
+
+    check_python_version()
+    app.require_sphinx('6.0')
+    check_html4_writer()
+    setup_jquery_extension()
+    register_theme()
+    add_message_catalog()
+    configure_app()
+
+    return {'parallel_read_safe': True, 'parallel_write_safe': True}",gpt-4o-2024-08-06,2026-10-01T06:19:15.501920+00:00,stop,579,306
+FUNC_0720,DataPipelines,"def __init__(self, index: MultiIndex, level: Level, constructor, sort: bool = True) -> None:
+    self.constructor = constructor
+    self.sort = sort
+    self.index = index.remove_unused_levels()
+    self.level = self.index._get_level_number(level)
+
+    # `nan` values have code `-1`, when sorting, we lift to assign them at index 0
+    self.has_nan = -1 in self.index.codes[self.level]
+    self.lift = 1 if self.has_nan and self.sort else 0
+
+    # Note: the ""pop"" below alters these in-place.
+    self.new_index_levels = list(self.index.levels)
+    self.new_index_names = list(self.index.names)
+
+    self.removed_name = self.new_index_names.pop(self.level)
+    self.removed_level = self.new_index_levels.pop(self.level)
+    self.removed_level_full = index.levels[self.level]
+    self.unique_nan_index: int = -1
+    self._level_code_map: npt.NDArray[np.intp] | None = None
+
+    if not self.sort:
+        self._handle_unsorted()
+    elif any(lev.hasnans for lev in self.index.levels):
+        self._handle_nan_levels()
+
+    if config[""mode""][""performance_warnings""]:
+        self._check_performance_warnings()
+
+    self._make_selectors()
+
+def _handle_unsorted(self):
+    unique_codes: np.ndarray = unique(self.index.codes[self.level])
+    if self.has_nan:
+        # drop nan codes, because they are not represented in level
+        nan_mask = unique_codes == -1
+        unique_codes = unique_codes[~nan_mask]
+        self.unique_nan_index = np.flatnonzero(nan_mask)[0]
+
+    self.removed_level = self.removed_level.take(unique_codes)
+    self.removed_level_full = self.removed_level_full.take(unique_codes)
+
+def _handle_nan_levels(self):
+    # remove_unused_levels returns the index unpruned when a level holds NaN as a value
+    level_codes = self.index.codes[self.level]
+    used = np.zeros(len(self.removed_level), dtype=bool)
+    used[level_codes[level_codes != -1]] = True
+    if not used.all():
+        self.removed_level = self.removed_level[used]
+        self._level_code_map = np.cumsum(used, dtype=np.intp) - 1
+
+def _check_performance_warnings(self):
+    # GH#20601: warn when the mask built in _make_selectors would have more cells than int32 can index.
+    num_rows = self._comp_index_and_ngroups[1]
+    num_columns = self.index.levshape[self.level] + self.has_nan
+    num_cells = num_rows * num_columns
+    if num_cells > np.iinfo(np.int32).max:
+        warnings.warn(
+            f""The following operation may generate {num_cells} cells in the resulting pandas object."",
+            PerformanceWarning,
+            stacklevel=find_stack_level(),
+        )",gpt-4o-2024-08-06,2026-10-01T06:19:18.875356+00:00,stop,799,633
+FUNC_0662,DataPipelines,"def objects_to_datetime64(
+    data: np.ndarray,
+    dayfirst,
+    yearfirst,
+    utc: bool = False,
+    errors: DateTimeErrorChoices = ""raise"",
+    out_unit: str | None = None,
+) -> tuple[np.ndarray, tzinfo | None]:
+    """"""
+    Convert data to array of timestamps.
+
+    Parameters
+    ----------
+    data : np.ndarray[object]
+    dayfirst : bool
+    yearfirst : bool
+    utc : bool, default False
+        Whether to convert/localize timestamps to UTC.
+    errors : {'raise', 'coerce'}
+    out_unit : str or None, default None
+        None indicates we should do resolution inference.
+
+    Returns
+    -------
+    result : ndarray
+        np.datetime64[out_unit] if returned values represent wall times or UTC
+        timestamps.
+    inferred_tz : tzinfo or None
+        If not None, then the datetime64 values in `result` denote UTC timestamps.
+
+    Raises
+    ------
+    ValueError : if data cannot be converted to datetimes
+    TypeError  : When a type cannot be converted to datetime
+    """"""
+    assert errors in [""raise"", ""coerce""]
+
+    # if str-dtype, convert
+    data = np.asarray(data, dtype=np.object_)
+
+    result, tz_parsed = tslib.array_to_datetime(
+        data,
+        errors=errors,
+        utc=utc,
+        dayfirst=dayfirst,
+        yearfirst=yearfirst,
+        creso=abbrev_to_npy_unit(out_unit),
+    )
+
+    if tz_parsed is not None or result.dtype.kind == ""M"":
+        return result, tz_parsed
+
+    # this TypeError should never be hit
+    raise TypeError(result)  # pragma: no cover",gpt-4o-2024-08-06,2026-10-01T06:19:26.139892+00:00,stop,519,371
+FUNC_0174,Matrix,"def remove_self_loops(  # noqa: F811
+    edge_index: Tensor,
+    edge_attr: Optional[Tensor] = None,
+) -> Tuple[Tensor, Optional[Tensor]]:
+    r""""""Removes every self-loop in the graph given by :attr:`edge_index`, so
+    that :math:`(i,i) \not\in \mathcal{E}` for every :math:`i \in \mathcal{V}`.
+
+    Args:
+        edge_index (LongTensor): The edge indices.
+        edge_attr (Tensor, optional): Edge weights or multi-dimensional
+            edge features. (default: :obj:`None`)
+
+    :rtype: (:class:`LongTensor`, :class:`Tensor`)
+
+    Example:
+        >>> edge_index = torch.tensor([[0, 1, 0],
+        ...                            [1, 0, 0]])
+        >>> edge_attr = [[1, 2], [3, 4], [5, 6]]
+        >>> edge_attr = torch.tensor(edge_attr)
+        >>> remove_self_loops(edge_index, edge_attr)
+        (tensor([[0, 1],
+                [1, 0]]),
+        tensor([[1, 2],
+                [3, 4]]))
+    """"""
+    size, layout, value = None, None, None
+
+    if is_torch_sparse_tensor(edge_index):
+        layout = edge_index.layout
+        size = (edge_index.size(0), edge_index.size(1))
+        edge_index, value = to_edge_index(edge_index)
+
+    is_undirected = (
+        not torch.jit.is_scripting() and isinstance(edge_index, EdgeIndex)
+        and edge_index.is_undirected
+    )
+
+    mask = edge_index[0] != edge_index[1]
+    edge_index = edge_index[:, mask]
+
+    if not torch.jit.is_scripting() and isinstance(edge_index, EdgeIndex):
+        edge_index._is_undirected = is_undirected
+
+    if layout is not None:
+        assert edge_attr is None and value is not None
+        value = value[mask]
+        if str(layout) == 'torch.sparse_coo':
+            return to_torch_coo_tensor(edge_index, value, size, True), None
+        elif str(layout) == 'torch.sparse_csr':
+            return to_torch_csr_tensor(edge_index, value, size, True), None
+        raise ValueError(f""Unexpected sparse tensor layout (got '{layout}')"")
+
+    return edge_index, edge_attr[mask] if edge_attr is not None else None",gpt-4o-2024-08-06,2026-10-01T06:19:29.012066+00:00,stop,725,540
+FUNC_0931,WebScraping,"def from_headers(self, headers: Mapping[bytes, bytes]) -> type[Response]:
+    """"""Return the most appropriate Response class by looking at the HTTP
+    headers""""""
+    content_type = headers.get(b""Content-Type"")
+    content_encoding = headers.get(b""Content-Encoding"")
+    content_disposition = headers.get(b""Content-Disposition"")
+
+    cls = self.from_content_type(content_type, content_encoding) if content_type else Response
+
+    if cls is Response and content_disposition:
+        cls = self.from_content_disposition(content_disposition)
+
+    return cls",gpt-4o-2024-08-06,2026-10-01T06:19:32.712547+00:00,stop,230,118
+FUNC_0104,Matrix,"def get_complement_subgraph(self) -> 'Explanation':
+    r""""""Returns the induced subgraph, in which all nodes and edges with any
+    attribution are masked out.
+    """"""
+    def process_mask(mask, condition):
+        return mask.sum(dim=-1) == 0 if condition else None
+
+    node_mask = process_mask(self.get('node_mask'), self.get('node_mask') is not None)
+    edge_mask = self.get('edge_mask') == 0 if self.get('edge_mask') is not None else None
+
+    return self._apply_masks(node_mask, edge_mask)",gpt-4o-2024-08-06,2026-10-01T06:19:34.604710+00:00,stop,230,126
+FUNC_0454,Crypto,"def _do_tdes_test(self, file_name):
+    test_vectors = load_test_vectors(
+        (""Cipher"", ""TDES""),
+        file_name,
+        ""TDES CBC KAT"",
+        {""count"": lambda x: int(x)}
+    )
+    if test_vectors is None:
+        return
+
+    direction = None
+    for tv in test_vectors:
+        if is_string(tv):
+            direction = tv
+            continue
+
+        self.description = tv.desc
+        cipher = self._initialize_cipher(tv)
+
+        if direction == ""[ENCRYPT]"":
+            self.assertEqual(cipher.encrypt(tv.plaintext), tv.ciphertext)
+        elif direction == ""[DECRYPT]"":
+            self.assertEqual(cipher.decrypt(tv.ciphertext), tv.plaintext)
+
+def _initialize_cipher(self, tv):
+    if hasattr(tv, ""keys""):
+        return DES.new(tv.keys, self.des_mode, tv.iv)
+    key = tv.key1 + tv.key2 + (tv.key3 if tv.key1 != tv.key3 else """")
+    return DES3.new(key, self.des3_mode, tv.iv)",gpt-4o-2024-08-06,2026-10-01T06:19:36.384721+00:00,stop,365,227
+FUNC_0357,Crypto,"def runTest(self):
+    """"""
+    Encrypt data which is 8*2+4 bytes long, so as to trigger (for the
+    AESNI variant) both the path that parallelizes 8 lanes and the one
+    that processes data serially.
+    """"""
+    test_vectors = [
+        (b'a' * 16, 'c0b27011eb15bf144d2fc9fae80ea16d4c231cb230416c5fac02e6835ad9d7d0'),
+        (b'a' * 24, 'df8435ce361a78c535b41dcb57da952abbf9ee5954dc6fbcd75fd00fa626915d'),
+        (b'a' * 32, '211402de6c80db1f92ba255881178e1f70783b8cfd3b37808205e48b80486cd8')
+    ]
+
+    plaintext = b"""".join([tobytes('{0:016x}'.format(x)) for x in range(20)])
+
+    for key, expected_hash in test_vectors:
+        cipher = AES.new(key, AES.MODE_ECB, use_aesni=self.use_aesni)
+        ciphertext = cipher.encrypt(plaintext)
+        self.assertEqual(SHA256.new(ciphertext).hexdigest(), expected_hash)",gpt-4o-2024-08-06,2026-10-01T06:19:38.836400+00:00,stop,407,290
+FUNC_0095,Matrix,"def forward(self, x: Tensor, batch: OptTensor = None, batch_size: Optional[int] = None) -> Tensor:
+    r""""""Forward pass.
+
+    Args:
+        x (torch.Tensor): The source tensor.
+        batch (torch.Tensor, optional): The batch vector
+            :math:`\mathbf{b} \in {\{ 0, \ldots, B-1\}}^N`, which assigns
+            each element to a specific example. (default: :obj:`None`)
+        batch_size (int, optional): The number of examples :math:`B`.
+            Automatically calculated if not given. (default: :obj:`None`)
+    """"""
+    scale = self.scale
+    if batch is None:
+        x = x - x.mean(dim=0, keepdim=True)
+        norm_factor = (self.eps + x.pow(2).sum(-1).mean()).sqrt() if not self.scale_individually else x.norm(2, -1, keepdim=True)
+    else:
+        mean = scatter(x, batch, dim=0, dim_size=batch_size, reduce='mean')
+        x = x - mean.index_select(0, batch)
+        if not self.scale_individually:
+            norm_factor = torch.sqrt(self.eps + scatter(
+                x.pow(2).sum(-1, keepdim=True), batch, dim=0,
+                dim_size=batch_size, reduce='mean').index_select(0, batch))
+        else:
+            norm_factor = self.eps + x.norm(2, -1, keepdim=True)
+    
+    return scale * x / norm_factor",gpt-4o-2024-08-06,2026-10-01T06:19:42.010026+00:00,stop,468,340
+FUNC_0824,WebScraping,"def _name_matches(allowed: set[str], denied: set[str], name: str) -> bool:
+    """"""Return whether a tag or attribute *name* should be considered.
+
+    A name matches when it is allowed and not denied. A name is allowed if it is
+    listed in *allowed*, or if *allowed* contains the ``""*""`` wildcard, which
+    matches every name. *denied* has precedence over *allowed*.
+    """"""
+    return name not in denied and (""*"" in allowed or name in allowed)",gpt-4o-2024-08-06,2026-10-01T06:19:44.818246+00:00,stop,234,116
+FUNC_0339,Crypto,"def _create_base_cipher(dict_parameters):
+    """"""This method instantiates and returns a smart pointer to
+    a low-level base cipher. It will absorb named parameters in
+    the process.""""""
+
+    def pop_param(param_name, default=None, required=True):
+        try:
+            return dict_parameters.pop(param_name)
+        except KeyError:
+            if required:
+                raise TypeError(f""Missing EKSBlowfish parameter: {param_name}"")
+            return default
+
+    key = pop_param(""key"")
+    salt = pop_param(""salt"")
+    cost = pop_param(""cost"")
+    invert = pop_param(""invert"", default=True, required=False)
+
+    if len(key) not in key_size:
+        raise ValueError(f""Incorrect EKSBlowfish key length ({len(key)} bytes)"")
+
+    start_operation = _raw_blowfish_lib.EKSBlowfish_start_operation
+    stop_operation = _raw_blowfish_lib.EKSBlowfish_stop_operation
+
+    void_p = VoidPointer()
+    result = start_operation(
+        c_uint8_ptr(key),
+        c_size_t(len(key)),
+        c_uint8_ptr(salt),
+        c_size_t(len(salt)),
+        c_uint(cost),
+        c_uint(int(invert)),
+        void_p.address_of()
+    )
+    if result:
+        raise ValueError(f""Error {result:X} while instantiating the EKSBlowfish cipher"")
+    
+    return SmartPointer(void_p.get(), stop_operation)",gpt-4o-2024-08-06,2026-10-01T06:19:46.818972+00:00,stop,388,305
+FUNC_0520,DataPipelines,"def _nbytes(self, deep: bool = False) -> int:
+    """"""
+    return the number of bytes in the underlying data
+    deeply introspect the level data if deep=True
+
+    include the engine hashtable
+
+    *this is in internal routine*
+
+    """"""
+    # for implementations with no useful getsizeof (PyPy)
+    objsize = 24
+
+    def calculate_memory_usage(items, deep=False):
+        return sum(item.memory_usage(deep=deep) for item in items)
+
+    def calculate_nbytes(items):
+        return sum(item.nbytes for item in items)
+
+    def calculate_getsizeof(items, default_size):
+        return sum(getsizeof(item, default_size) for item in items)
+
+    level_nbytes = calculate_memory_usage(self.levels, deep)
+    label_nbytes = calculate_nbytes(self.codes)
+    names_nbytes = calculate_getsizeof(self.names, objsize)
+
+    result = level_nbytes + label_nbytes + names_nbytes
+
+    # include our engine hashtable, only if it's already cached
+    if ""_engine"" in self._cache:
+        result += self._engine.sizeof(deep=deep)
+
+    return result",gpt-4o-2024-08-06,2026-10-01T06:19:49.974774+00:00,stop,306,244
+FUNC_0373,Crypto,"def _rabinMillerTest(n, rounds, randfunc=None):
+    """"""_rabinMillerTest(n:long, rounds:int, randfunc:callable):int
+    Tests if n is prime.
+    Returns 0 when n is definitely composite.
+    Returns 1 when n is probably prime.
+    Returns 2 when n is definitely prime.
+
+    If randfunc is omitted, then Random.new().read is used.
+
+    This function is for internal use only and may be renamed or removed in
+    the future.
+    """"""
+    if n < 3 or (n & 1) == 0:
+        return n == 2
+
+    n_1 = n - 1
+    b, m = 0, n_1
+    while (m & 1) == 0:
+        b += 1
+        m >>= 1
+
+    tested = set()
+    for _ in iter_range(min(rounds, n - 2)):
+        a = getRandomRange(2, n, randfunc)
+        while a in tested:
+            a = getRandomRange(2, n, randfunc)
+        tested.add(a)
+
+        z = pow(a, m, n)
+        if z == 1 or z == n_1:
+            continue
+
+        for _ in iter_range(b):
+            z = (z * z) % n
+            if z == 1:
+                return 0
+            if z == n_1:
+                break
+        else:
+            return 0
+
+    return 1",gpt-4o-2024-08-06,2026-10-01T06:19:52.595840+00:00,stop,564,326
+FUNC_0551,DataPipelines,"def __setattr__(self, key: str, value) -> None:
+    """"""Set an attribute on the object, with restrictions if the object is frozen.""""""
+    is_frozen = getattr(self, ""__frozen"", False)
+    is_cache_key = key == ""_cache""
+    is_existing_attr = key in type(self).__dict__ or getattr(self, key, None) is not None
+
+    if is_frozen and not (is_cache_key or is_existing_attr):
+        raise AttributeError(f""You cannot add any new attribute '{key}'"")
+
+    object.__setattr__(self, key, value)",gpt-4o-2024-08-06,2026-10-01T06:19:55.688056+00:00,stop,272,128
+FUNC_0711,DataPipelines,"def infer_filename(self) -> str | None:
+    """"""
+    If an explicit archive_name is not given, we still want the file inside the zip
+    file not to be named something.tar, because that causes confusion (GH39465).
+    """"""
+    if self.name is None:
+        return None
+
+    filename = Path(self.name)
+    suffixes_to_strip = {"".tar"": 1, "".tar.gz"": 2, "".tar.bz2"": 2, "".tar.xz"": 2}
+    suffix_count = suffixes_to_strip.get(filename.suffix, 0)
+
+    for _ in range(suffix_count):
+        filename = filename.with_suffix("""")
+
+    return filename.name",gpt-4o-2024-08-06,2026-10-01T06:19:58.959714+00:00,stop,243,148
+FUNC_0646,DataPipelines,"def _read_strls(self) -> None:
+    self._path_or_buf.seek(self._seek_strls)
+    self.GSO = {""0"": """"}
+
+    while self._path_or_buf.read(3) == b""GSO"":
+        v_o = self._read_v_o()
+        typ = self._read_uint8()
+        length = self._read_uint32()
+        va = self._path_or_buf.read(length)
+        decoded_va = self._decode_va(va, typ)
+        self.GSO[str(v_o)] = decoded_va
+
+def _read_v_o(self) -> int:
+    if self._format_version == 117:
+        return self._read_uint64()
+    buf = self._path_or_buf.read(12)
+    v_size = 2 if self._format_version == 118 else 3
+    if self._byteorder == ""<"":
+        buf = buf[0:v_size] + buf[4:(12 - v_size)]
+    else:
+        buf = buf[4 - v_size:4] + buf[(4 + v_size):]
+    return struct.unpack(f""{self._byteorder}Q"", buf)[0]
+
+def _decode_va(self, va: bytes, typ: int) -> str:
+    if typ == 130:
+        return va[0:-1].decode(self._encoding)
+    return str(va)",gpt-4o-2024-08-06,2026-10-01T06:20:02.948749+00:00,stop,441,287
+FUNC_0571,DataPipelines,"def get_period_offset(ax: Axes, index: Index) -> BaseOffset | None:
+    """"""
+    Resolve the period frequency to plot `index` with on `ax`, or None.
+
+    The freq is resolved the same way :func:`use_dynamic_x` resolves it, since
+    that is what decides whether the dynamic date axis is used at all: the
+    index ``freq`` attribute may be unset even when the index is regular (the
+    freq is then inferred), and an already-decorated axes carries the freq of
+    whatever was plotted on it first.  The result is normalized to a period
+    offset, because an axes stores its freq as a period alias string.
+    """"""
+    freq = _get_index_freq(index) or _get_ax_freq(ax)
+    if not freq:
+        return None
+
+    freq_str = _get_period_alias(freq)
+    if not freq_str:
+        return None
+
+    return to_offset(OFFSET_TO_PERIOD_FREQSTR.get(freq_str, freq_str), is_period=True)",gpt-4o-2024-08-06,2026-10-01T06:20:05.789715+00:00,stop,346,216
+FUNC_0694,DataPipelines,"def __init__(
+    self,
+    df,
+    na_rep: str = """",
+    float_format: str | None = None,
+    cols: Sequence[Hashable] | None = None,
+    header: Sequence[Hashable] | bool = True,
+    index: bool = True,
+    index_label: IndexLabel | None = None,
+    merge_cells: ExcelWriterMergeCells = False,
+    inf_rep: str = ""inf"",
+    style_converter: Callable | None = None,
+    autofilter: bool = False,
+) -> None:
+    self.rowcounter = 0
+    self.na_rep = na_rep
+    self.df, self.styler, self.style_converter = self._initialize_df_and_styler(df, style_converter)
+    self.df = self._reindex_columns_if_needed(cols)
+    self.columns = self.df.columns
+    self.float_format = float_format
+    self.index = index
+    self.index_label = index_label
+    self.header = header
+    self.merge_cells = self._validate_merge_cells(merge_cells)
+    self.inf_rep = inf_rep
+    self.autofilter = autofilter
+
+def _initialize_df_and_styler(self, df, style_converter):
+    if not isinstance(df, DataFrame):
+        styler = df
+        styler._compute()  # calculate applied styles
+        df = df.data
+        if style_converter is None:
+            style_converter = CSSToExcelConverter()
+    else:
+        styler = None
+        style_converter = None
+    return df, styler, style_converter
+
+def _reindex_columns_if_needed(self, cols):
+    if cols is not None:
+        if not len(Index(cols).intersection(self.df.columns)):
+            raise KeyError(""Passed columns are not all present in the dataframe"")
+        if len(Index(cols).intersection(self.df.columns)) != len(set(cols)):
+            raise KeyError(""Not all names specified in 'columns' are found"")
+        return self.df.reindex(columns=cols)
+    return self.df
+
+def _validate_merge_cells(self, merge_cells):
+    if not isinstance(merge_cells, bool) and merge_cells != ""columns"":
+        raise ValueError(f""Unexpected value for {merge_cells=}."")
+    return merge_cells",gpt-4o-2024-08-06,2026-10-01T06:20:08.392997+00:00,stop,532,468
+FUNC_0641,DataPipelines,"def combine_first(self, other: DataFrame) -> DataFrame:
+    """"""
+    Update null elements with value in the same location in `other`.
+
+    Combine two DataFrame objects by filling null values in one DataFrame
+    with non-null values from other DataFrame. The row and column indexes
+    of the resulting DataFrame will be the union of the two. The resulting
+    dataframe contains the 'first' dataframe values and overrides the
+    second one values where both first.loc[index, col] and
+    second.loc[index, col] are not missing values, upon calling
+    first.combine_first(second).
+
+    Parameters
+    ----------
+    other : DataFrame
+        Provided DataFrame to use to fill null values.
+
+    Returns
+    -------
+    DataFrame
+        The result of combining the provided DataFrame with the other object.
+
+    See Also
+    --------
+    DataFrame.combine : Perform series-wise operation on two DataFrames
+        using a given function.
+
+    Examples
+    --------
+    >>> df1 = pd.DataFrame({""A"": [None, 0], ""B"": [None, 4]})
+    >>> df2 = pd.DataFrame({""A"": [1, 1], ""B"": [3, 3]})
+    >>> df1.combine_first(df2)
+         A    B
+    0  1.0  3.0
+    1  0.0  4.0
+
+    Null values still persist if the location of that null value
+    does not exist in `other`
+
+    >>> df1 = pd.DataFrame({""A"": [None, 0], ""B"": [4, None]})
+    >>> df2 = pd.DataFrame({""B"": [3, 3], ""C"": [1, 1]}, index=[1, 2])
+    >>> df1.combine_first(df2)
+         A    B    C
+    0  NaN  4.0  NaN
+    1  0.0  3.0  1.0
+    2  NaN  3.0  1.0
+    """"""
+
+    def combiner(x: Series, y: Series):
+        # GH#60128 The combiner is supposed to preserve EA Dtypes.
+        return y if y.name not in self.columns else y.where(x.isna(), x)
+
+    if len(other) == 0:
+        combined = self.reindex(
+            self.columns.append(other.columns.difference(self.columns)), axis=1
+        ).astype(other.dtypes)
+    else:
+        combined = self.combine(other, combiner, overwrite=False)
+
+    dtypes = {
+        col: find_common_type([self.dtypes[col], other.dtypes[col]])
+        for col in self.columns.intersection(other.columns)
+        if isinstance(combined.dtypes[col], (np.dtype, ExtensionDtype))
+        and isinstance(self.dtypes[col], (np.dtype, ExtensionDtype))
+        and combined.dtypes[col] != self.dtypes[col]
+    }
+
+    if dtypes:
+        combined = combined.astype(dtypes)
+
+    return combined.__finalize__(self, method=""combine_first"")",gpt-4o-2024-08-06,2026-10-01T06:20:13.014285+00:00,stop,828,663
+FUNC_0253,Matrix,"def set_dataset_info(dataset):
+    r""""""Set global dataset information.
+
+    Args:
+        dataset: PyG dataset object
+
+    """"""
+    # get dim_in and dim_out
+    cfg.share.dim_in = getattr(dataset._data.x, 'shape', [1])[1] if hasattr(dataset._data.x, 'shape') else 1
+
+    try:
+        if cfg.dataset.task_type == 'classification':
+            cfg.share.dim_out = torch.unique(dataset._data.y).shape[0]
+        else:
+            cfg.share.dim_out = dataset._data.y.shape[1]
+    except Exception:
+        cfg.share.dim_out = 1
+
+    # count number of dataset splits
+    cfg.share.num_splits = 1 + any('val' in key for key in dataset._data.keys()) + any('test' in key for key in dataset._data.keys())",gpt-4o-2024-08-06,2026-10-01T06:20:19.077232+00:00,stop,322,181
+FUNC_0396,Crypto,"def _create_ocb_cipher(factory, **kwargs):
+    """"""Create a new block cipher, configured in OCB mode.
+
+    :Parameters:
+      factory : module
+        A symmetric cipher module from `Crypto.Cipher`
+        (like `Crypto.Cipher.AES`).
+
+    :Keywords:
+      nonce : bytes/bytearray/memoryview
+        A  value that must never be reused for any other encryption.
+        Its length can vary from 1 to 15 bytes.
+        If not specified, a random 15 bytes long nonce is generated.
+
+      mac_len : integer
+        Length of the MAC, in bytes.
+        It must be in the range ``[8..16]``.
+        The default is 16 (128 bits).
+
+    Any other keyword will be passed to the underlying block cipher.
+    See the relevant documentation for details (at least ``key`` will need
+    to be present).
+    """"""
+    
+    nonce = kwargs.pop(""nonce"", get_random_bytes(15))
+    mac_len = kwargs.pop(""mac_len"", 16)
+
+    return OcbMode(factory, nonce, mac_len, kwargs)",gpt-4o-2024-08-06,2026-10-01T06:20:21.239342+00:00,stop,382,235
+FUNC_0422,Crypto,"def __init__(self, data, key, digest_bytes, update_after_digest):
+    """"""
+    Initialize the BLAKE2s hash function.
+
+    :param data: Initial data to hash.
+    :param key: Key for keyed hashing.
+    :param digest_bytes: Size of the resulting hash in bytes.
+    :param update_after_digest: Flag to allow updates after digest.
+    """"""
+    self.digest_size = digest_bytes
+    self._update_after_digest = update_after_digest
+    self._digest_done = False
+
+    # Set OID based on digest size if no key is provided
+    if digest_bytes in (16, 20, 28, 32) and not key:
+        self.oid = f""1.3.6.1.4.1.1722.12.2.2.{digest_bytes // 4}""
+
+    # Initialize the BLAKE2s state
+    state = VoidPointer()
+    result = _raw_blake2s_lib.blake2s_init(
+        state.address_of(),
+        c_uint8_ptr(key),
+        c_size_t(len(key)),
+        c_size_t(digest_bytes)
+    )
+    if result:
+        raise ValueError(f""Error {result} while instantiating BLAKE2s"")
+
+    self._state = SmartPointer(state.get(), _raw_blake2s_lib.blake2s_destroy)
+
+    # Update with initial data if provided
+    if data:
+        self.update(data)",gpt-4o-2024-08-06,2026-10-01T06:20:23.741778+00:00,stop,353,308

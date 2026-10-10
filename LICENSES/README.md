@@ -1,0 +1,1 @@
+Current upstream project notices were retrieved on 10 October 2026. These are reference notices, not proof of the original source checkout. The study archived only file basenames and function bodies, so source header notices and exact repository revisions require author-supplied provenance before publication. No third-party code is relicensed by this package.
