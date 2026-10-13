@@ -4,7 +4,8 @@ url: "https://github.com/zaher1976/LLM-Code-Transformations"
 repository-code: "https://github.com/zaher1976/LLM-Code-Transformations"
 title: "Structural Complexity and Documentation Loss in Code Transformations by a Large Language Model"
 type: dataset
-version: 0.1.2
+version: 0.1.1
+doi: "10.5281/zenodo.23287972"
 date-released: 2026-10-10
 abstract: "Archived source functions, recorded GPT-4o transformations, paired static metrics and scripts for remeasurement of 910 analysed pairs and a 100-function prompt ablation. Behavioural equivalence was not tested."
 authors:
