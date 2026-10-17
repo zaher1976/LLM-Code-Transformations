@@ -10,7 +10,7 @@ Archived release DOI: https://doi.org/10.5281/zenodo.23287972
 
 1. **Sura Salah** — Presidency of Al-Nahrain University, Baghdad, Iraq. Email: sura.salah89@nahrainuniv.edu.iq.
 2. **Sama Hayder** — Administrative Technical College, Middle Technical University, Baghdad, Iraq. Email: sama.yaser91@gmail.com.
-3. **Zaher Fadhil Raham** — College of Computing and Informatics, Universiti Tenaga Nasional (UNITEN), Selangor 43000, Malaysia; Al-Nahrain University, Baghdad, Iraq. ORCID: https://orcid.org/0009-0001-4728-806X.
+3. **Zaher Fadhil Raham** — College of Computing and Informatics, Universiti Tenaga Nasional (UNITEN), Selangor 43000, Malaysia; Biomass Department, Al-Nahrain Research Center for Renewable Energy, Al-Nahrain University, Baghdad, Iraq. ORCID: https://orcid.org/0009-0001-4728-806X.
 
 **Corresponding author:** Zaher Fadhil Raham, pt21162@uniten.edu.my (alternative: zahir.raham@gmail.com).
 
